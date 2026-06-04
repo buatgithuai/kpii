@@ -1,0 +1,2951 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TENX Apparel — KPI Command Center</title>
+
+<!-- Firebase SDKs -->
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-database-compat.js"></script>
+
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Barlow:ital,wght@0,300;0,400;0,600;0,700;1,300&family=Barlow+Condensed:wght@400;600;700&display=swap" rel="stylesheet">
+<link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet">
+
+<style>
+:root {
+  --bg: #0a0a0a;
+  --surface: #111111;
+  --surface2: #1a1a1a;
+  --surface3: #222222;
+  --border: #2a2a2a;
+  --border2: #333333;
+  --accent: #e8ff00;
+  --accent2: #ff6b00;
+  --accent3: #00d4ff;
+  --danger: #ff3b3b;
+  --success: #00e676;
+  --warning: #ffab00;
+  --text: #f0f0f0;
+  --text2: #999999;
+  --text3: #555555;
+  --font-display: 'Bebas Neue', sans-serif;
+  --font-body: 'Barlow', sans-serif;
+  --font-cond: 'Barlow Condensed', sans-serif;
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font-body);
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+/* NOISE TEXTURE */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.03'/%3E%3C/svg%3E");
+  pointer-events: none;
+  z-index: 9999;
+  opacity: 0.4;
+}
+
+/* ============================
+   HEADER
+============================ */
+header {
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  background: rgba(10,10,10,0.95);
+  backdrop-filter: blur(20px);
+  border-bottom: 1px solid var(--border);
+  padding: 0 32px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 64px;
+}
+
+.logo {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.logo-mark {
+  width: 38px;
+  height: 38px;
+  background: var(--accent);
+  color: #000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--font-display);
+  font-size: 18px;
+  letter-spacing: 0;
+  clip-path: polygon(0 0, 85% 0, 100% 15%, 100% 100%, 15% 100%, 0 85%);
+}
+
+.logo-text {
+  font-family: var(--font-display);
+  font-size: 22px;
+  letter-spacing: 3px;
+  color: var(--text);
+}
+.logo-text span { color: var(--accent); }
+
+.header-right {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+}
+
+.live-badge {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-family: var(--font-cond);
+  font-size: 11px;
+  letter-spacing: 2px;
+  color: var(--success);
+  text-transform: uppercase;
+}
+.live-dot {
+  width: 6px; height: 6px;
+  border-radius: 50%;
+  background: var(--success);
+  animation: pulse 1.5s ease-in-out infinite;
+}
+@keyframes pulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.4; transform: scale(0.6); }
+}
+
+.year-selector {
+  display: flex;
+  align-items: center;
+  gap: 0;
+  background: var(--surface2);
+  border: 1px solid var(--border2);
+  border-radius: 4px;
+  overflow: hidden;
+}
+.year-selector button {
+  background: none;
+  border: none;
+  color: var(--text2);
+  width: 30px; height: 32px;
+  cursor: pointer;
+  font-size: 12px;
+  transition: all 0.2s;
+}
+.year-selector button:hover { background: var(--surface3); color: var(--text); }
+.year-display {
+  font-family: var(--font-cond);
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--accent);
+  padding: 0 14px;
+  letter-spacing: 2px;
+}
+
+/* ============================
+   MAIN LAYOUT
+============================ */
+.layout {
+  display: grid;
+  grid-template-columns: 220px 1fr;
+  min-height: calc(100vh - 64px);
+}
+
+/* ============================
+   SIDEBAR
+============================ */
+.sidebar {
+  background: var(--surface);
+  border-right: 1px solid var(--border);
+  padding: 24px 0;
+  position: sticky;
+  top: 64px;
+  height: calc(100vh - 64px);
+  overflow-y: auto;
+}
+
+.sidebar-section {
+  margin-bottom: 8px;
+}
+
+.sidebar-label {
+  font-family: var(--font-cond);
+  font-size: 10px;
+  letter-spacing: 3px;
+  color: var(--text3);
+  text-transform: uppercase;
+  padding: 8px 20px 6px;
+}
+
+.sidebar-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 20px;
+  cursor: pointer;
+  transition: all 0.2s;
+  border-left: 3px solid transparent;
+  font-size: 14px;
+  color: var(--text2);
+  position: relative;
+}
+.sidebar-item:hover {
+  background: var(--surface2);
+  color: var(--text);
+  border-left-color: var(--border2);
+}
+.sidebar-item.active {
+  background: rgba(232, 255, 0, 0.06);
+  color: var(--accent);
+  border-left-color: var(--accent);
+}
+.sidebar-item .icon { width: 16px; font-size: 13px; opacity: 0.7; }
+.sidebar-item.active .icon { opacity: 1; }
+
+.sidebar-badge {
+  margin-left: auto;
+  background: var(--accent);
+  color: #000;
+  font-family: var(--font-cond);
+  font-size: 10px;
+  font-weight: 700;
+  padding: 1px 6px;
+  border-radius: 2px;
+  letter-spacing: 0.5px;
+}
+
+.divider {
+  height: 1px;
+  background: var(--border);
+  margin: 12px 0;
+}
+
+/* ============================
+   MAIN CONTENT
+============================ */
+.main {
+  padding: 32px;
+  overflow-y: auto;
+}
+
+/* ============================
+   PAGE TITLE
+============================ */
+.page-header {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  margin-bottom: 32px;
+}
+
+.page-title {
+  font-family: var(--font-display);
+  font-size: 48px;
+  letter-spacing: 4px;
+  line-height: 1;
+  color: var(--text);
+}
+.page-title span { color: var(--accent); }
+
+.page-subtitle {
+  font-size: 13px;
+  color: var(--text2);
+  margin-top: 4px;
+  letter-spacing: 1px;
+  font-family: var(--font-cond);
+}
+
+/* ============================
+   BUTTONS
+============================ */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 20px;
+  border: none;
+  cursor: pointer;
+  font-family: var(--font-cond);
+  font-size: 13px;
+  letter-spacing: 1.5px;
+  font-weight: 600;
+  text-transform: uppercase;
+  transition: all 0.2s;
+  border-radius: 3px;
+}
+.btn-primary {
+  background: var(--accent);
+  color: #000;
+}
+.btn-primary:hover { background: #d4eb00; transform: translateY(-1px); }
+.btn-secondary {
+  background: var(--surface2);
+  color: var(--text);
+  border: 1px solid var(--border2);
+}
+.btn-secondary:hover { background: var(--surface3); }
+.btn-danger {
+  background: transparent;
+  color: var(--danger);
+  border: 1px solid var(--danger);
+}
+.btn-danger:hover { background: rgba(255,59,59,0.1); }
+.btn-sm { padding: 6px 14px; font-size: 11px; }
+.btn-icon {
+  width: 32px; height: 32px;
+  padding: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 13px;
+}
+
+/* ============================
+   KPI CARDS - TOP STATS
+============================ */
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 16px;
+  margin-bottom: 32px;
+}
+
+.stat-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  padding: 20px;
+  position: relative;
+  overflow: hidden;
+  transition: all 0.3s;
+}
+.stat-card:hover {
+  border-color: var(--border2);
+  transform: translateY(-2px);
+}
+.stat-card::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0;
+  width: 100%; height: 3px;
+  background: var(--card-color, var(--accent));
+}
+
+.stat-label {
+  font-family: var(--font-cond);
+  font-size: 11px;
+  letter-spacing: 2px;
+  color: var(--text2);
+  text-transform: uppercase;
+  margin-bottom: 8px;
+}
+.stat-value {
+  font-family: var(--font-display);
+  font-size: 38px;
+  letter-spacing: 2px;
+  line-height: 1;
+  color: var(--card-color, var(--accent));
+  margin-bottom: 4px;
+}
+.stat-change {
+  font-size: 12px;
+  color: var(--text2);
+}
+.stat-change.up { color: var(--success); }
+.stat-change.down { color: var(--danger); }
+
+.stat-icon {
+  position: absolute;
+  right: 16px;
+  top: 16px;
+  font-size: 24px;
+  opacity: 0.08;
+}
+
+/* ============================
+   SECTION PANEL
+============================ */
+.panel {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  margin-bottom: 24px;
+}
+
+.panel-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 24px;
+  border-bottom: 1px solid var(--border);
+}
+
+.panel-title {
+  font-family: var(--font-cond);
+  font-size: 14px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: var(--text);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.panel-title .dot {
+  width: 8px; height: 8px;
+  border-radius: 50%;
+  background: var(--accent);
+}
+
+.panel-body { padding: 24px; }
+
+/* ============================
+   TABLE
+============================ */
+.table-wrap { overflow-x: auto; }
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+}
+thead th {
+  font-family: var(--font-cond);
+  font-size: 10px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: var(--text3);
+  padding: 8px 16px;
+  text-align: left;
+  border-bottom: 1px solid var(--border);
+}
+tbody tr {
+  border-bottom: 1px solid var(--border);
+  transition: background 0.15s;
+}
+tbody tr:hover { background: rgba(255,255,255,0.02); }
+tbody td {
+  padding: 12px 16px;
+  font-size: 14px;
+  color: var(--text);
+}
+
+/* ============================
+   PROGRESS BAR
+============================ */
+.progress-wrap {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.progress-bar {
+  flex: 1;
+  height: 6px;
+  background: var(--surface3);
+  border-radius: 0;
+  overflow: hidden;
+}
+.progress-fill {
+  height: 100%;
+  transition: width 0.8s cubic-bezier(0.4,0,0.2,1);
+  border-radius: 0;
+}
+.progress-label {
+  font-family: var(--font-cond);
+  font-size: 12px;
+  font-weight: 600;
+  min-width: 42px;
+  text-align: right;
+}
+
+/* ============================
+   BADGE
+============================ */
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 10px;
+  font-family: var(--font-cond);
+  font-size: 10px;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  font-weight: 700;
+  border-radius: 2px;
+}
+.badge-success { background: rgba(0,230,118,0.12); color: var(--success); border: 1px solid rgba(0,230,118,0.2); }
+.badge-danger { background: rgba(255,59,59,0.12); color: var(--danger); border: 1px solid rgba(255,59,59,0.2); }
+.badge-warning { background: rgba(255,171,0,0.12); color: var(--warning); border: 1px solid rgba(255,171,0,0.2); }
+.badge-info { background: rgba(0,212,255,0.12); color: var(--accent3); border: 1px solid rgba(0,212,255,0.2); }
+
+/* ============================
+   MODAL
+============================ */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.8);
+  backdrop-filter: blur(4px);
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.3s;
+}
+.modal-overlay.open {
+  opacity: 1;
+  pointer-events: all;
+}
+.modal {
+  background: var(--surface);
+  border: 1px solid var(--border2);
+  width: 560px;
+  max-width: 95vw;
+  max-height: 90vh;
+  overflow-y: auto;
+  transform: translateY(20px);
+  transition: transform 0.3s;
+}
+.modal-overlay.open .modal {
+  transform: translateY(0);
+}
+.modal-header {
+  padding: 20px 24px;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.modal-title {
+  font-family: var(--font-display);
+  font-size: 22px;
+  letter-spacing: 3px;
+}
+.modal-close {
+  background: none;
+  border: none;
+  color: var(--text2);
+  font-size: 18px;
+  cursor: pointer;
+  width: 32px; height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: color 0.2s;
+}
+.modal-close:hover { color: var(--text); }
+.modal-body { padding: 24px; }
+.modal-footer {
+  padding: 16px 24px;
+  border-top: 1px solid var(--border);
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+}
+
+/* ============================
+   FORM
+============================ */
+.form-group { margin-bottom: 18px; }
+.form-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+label {
+  display: block;
+  font-family: var(--font-cond);
+  font-size: 11px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: var(--text2);
+  margin-bottom: 6px;
+}
+input, select, textarea {
+  width: 100%;
+  background: var(--surface2);
+  border: 1px solid var(--border2);
+  color: var(--text);
+  padding: 10px 14px;
+  font-family: var(--font-body);
+  font-size: 14px;
+  outline: none;
+  transition: border-color 0.2s;
+  border-radius: 3px;
+}
+input:focus, select:focus, textarea:focus {
+  border-color: var(--accent);
+}
+select option { background: var(--surface2); }
+textarea { resize: vertical; min-height: 80px; }
+
+/* ============================
+   DIVISION CARDS
+============================ */
+.divisions-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+  margin-bottom: 32px;
+}
+
+.division-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  padding: 20px;
+  cursor: pointer;
+  transition: all 0.25s;
+  position: relative;
+  overflow: hidden;
+}
+.division-card:hover {
+  border-color: var(--div-color);
+  transform: translateY(-3px);
+  box-shadow: 0 8px 24px rgba(0,0,0,0.3);
+}
+.division-card.active {
+  border-color: var(--div-color);
+  background: rgba(255,255,255,0.03);
+}
+.division-card::after {
+  content: '';
+  position: absolute;
+  bottom: 0; left: 0;
+  width: 100%; height: 3px;
+  background: var(--div-color);
+  transform: scaleX(0);
+  transform-origin: left;
+  transition: transform 0.3s;
+}
+.division-card:hover::after,
+.division-card.active::after {
+  transform: scaleX(1);
+}
+
+.div-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 14px;
+}
+.div-icon {
+  width: 36px; height: 36px;
+  background: rgba(255,255,255,0.05);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 15px;
+  color: var(--div-color);
+  border-radius: 4px;
+}
+.div-name {
+  font-family: var(--font-cond);
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  color: var(--text);
+  margin-bottom: 2px;
+}
+.div-kpi-count {
+  font-size: 11px;
+  color: var(--text3);
+}
+.div-score {
+  font-family: var(--font-display);
+  font-size: 36px;
+  letter-spacing: 2px;
+  color: var(--div-color);
+  line-height: 1;
+  margin-bottom: 8px;
+}
+.div-score small {
+  font-size: 16px;
+  opacity: 0.6;
+}
+
+/* ============================
+   HISTORY TIMELINE
+============================ */
+.timeline {
+  position: relative;
+  padding-left: 24px;
+}
+.timeline::before {
+  content: '';
+  position: absolute;
+  left: 6px;
+  top: 0; bottom: 0;
+  width: 1px;
+  background: var(--border2);
+}
+.timeline-item {
+  position: relative;
+  margin-bottom: 20px;
+}
+.timeline-dot {
+  position: absolute;
+  left: -24px;
+  top: 4px;
+  width: 12px; height: 12px;
+  border-radius: 50%;
+  background: var(--surface3);
+  border: 2px solid var(--border2);
+}
+.timeline-dot.achieved {
+  background: var(--success);
+  border-color: var(--success);
+}
+.timeline-dot.partial {
+  background: var(--warning);
+  border-color: var(--warning);
+}
+.timeline-dot.missed {
+  background: var(--danger);
+  border-color: var(--danger);
+}
+
+.timeline-year {
+  font-family: var(--font-display);
+  font-size: 20px;
+  letter-spacing: 3px;
+  color: var(--accent);
+  margin-bottom: 8px;
+}
+.timeline-content {
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  padding: 14px 16px;
+  border-radius: 4px;
+}
+
+/* ============================
+   TOAST
+============================ */
+.toast-container {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  z-index: 9000;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.toast {
+  background: var(--surface2);
+  border: 1px solid var(--border2);
+  border-left: 3px solid var(--accent);
+  padding: 12px 18px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 13px;
+  animation: toastIn 0.3s ease forwards;
+  min-width: 280px;
+}
+.toast.success { border-left-color: var(--success); }
+.toast.error { border-left-color: var(--danger); }
+@keyframes toastIn {
+  from { transform: translateX(100%); opacity: 0; }
+  to { transform: translateX(0); opacity: 1; }
+}
+
+/* ============================
+   PAGE SECTIONS (show/hide)
+============================ */
+.page { display: none; }
+.page.active { display: block; }
+
+/* ============================
+   MAIN TARGET SECTION
+============================ */
+.main-target-hero {
+  background: linear-gradient(135deg, rgba(232,255,0,0.05) 0%, transparent 60%);
+  border: 1px solid var(--border);
+  border-left: 4px solid var(--accent);
+  padding: 28px 32px;
+  margin-bottom: 32px;
+  position: relative;
+  overflow: hidden;
+}
+.main-target-hero::before {
+  content: 'TARGET UTAMA';
+  position: absolute;
+  right: -20px;
+  top: 50%;
+  transform: translateY(-50%) rotate(90deg);
+  font-family: var(--font-display);
+  font-size: 80px;
+  letter-spacing: 8px;
+  color: rgba(232,255,0,0.03);
+  white-space: nowrap;
+}
+
+.target-year-row {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 16px;
+}
+.target-year-badge {
+  font-family: var(--font-display);
+  font-size: 48px;
+  color: var(--accent);
+  letter-spacing: 4px;
+  line-height: 1;
+}
+.target-year-desc {
+  border-left: 1px solid var(--border2);
+  padding-left: 16px;
+}
+.target-year-desc h3 {
+  font-family: var(--font-cond);
+  font-size: 18px;
+  letter-spacing: 2px;
+  margin-bottom: 4px;
+}
+.target-year-desc p {
+  font-size: 13px;
+  color: var(--text2);
+}
+
+.main-target-metrics {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 16px;
+}
+.metric-item {
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  padding: 14px 16px;
+}
+.metric-label {
+  font-family: var(--font-cond);
+  font-size: 10px;
+  letter-spacing: 2px;
+  color: var(--text2);
+  text-transform: uppercase;
+  margin-bottom: 6px;
+}
+.metric-value {
+  font-family: var(--font-display);
+  font-size: 26px;
+  letter-spacing: 2px;
+  color: var(--text);
+}
+.metric-value.accent { color: var(--accent); }
+.metric-value.success { color: var(--success); }
+.metric-value.warning { color: var(--warning); }
+
+/* ============================
+   EMPTY STATE
+============================ */
+.empty-state {
+  text-align: center;
+  padding: 60px 24px;
+  color: var(--text3);
+}
+.empty-state i {
+  font-size: 40px;
+  margin-bottom: 16px;
+  opacity: 0.3;
+}
+.empty-state p {
+  font-family: var(--font-cond);
+  font-size: 13px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+}
+
+/* ============================
+   CONFIRM DIALOG
+============================ */
+.confirm-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.85);
+  z-index: 2000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.2s;
+}
+.confirm-overlay.open { opacity: 1; pointer-events: all; }
+.confirm-box {
+  background: var(--surface);
+  border: 1px solid var(--danger);
+  padding: 28px;
+  width: 380px;
+  text-align: center;
+}
+.confirm-box h3 {
+  font-family: var(--font-display);
+  font-size: 22px;
+  letter-spacing: 3px;
+  margin-bottom: 10px;
+  color: var(--danger);
+}
+.confirm-box p {
+  font-size: 13px;
+  color: var(--text2);
+  margin-bottom: 24px;
+}
+.confirm-actions { display: flex; gap: 12px; justify-content: center; }
+
+/* SCROLLBAR */
+::-webkit-scrollbar { width: 4px; height: 4px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 2px; }
+
+/* ============================
+   LOG / CATATAN HARIAN
+============================ */
+.log-card {
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-left: 3px solid var(--accent3);
+  padding: 16px 20px;
+  margin-bottom: 12px;
+  transition: all 0.2s;
+  position: relative;
+}
+.log-card:hover { border-color: var(--border2); border-left-color: var(--accent3); background: var(--surface3); }
+.log-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 8px;
+}
+.log-date {
+  font-family: var(--font-cond);
+  font-size: 12px;
+  letter-spacing: 2px;
+  color: var(--accent3);
+  text-transform: uppercase;
+}
+.log-tag {
+  font-family: var(--font-cond);
+  font-size: 10px;
+  letter-spacing: 1px;
+  padding: 2px 8px;
+  border-radius: 2px;
+  text-transform: uppercase;
+}
+.log-tag-daily { background: rgba(0,212,255,0.1); color: var(--accent3); border: 1px solid rgba(0,212,255,0.2); }
+.log-tag-weekly { background: rgba(232,255,0,0.1); color: var(--accent); border: 1px solid rgba(232,255,0,0.2); }
+.log-tag-milestone { background: rgba(0,230,118,0.1); color: var(--success); border: 1px solid rgba(0,230,118,0.2); }
+.log-tag-issue { background: rgba(255,59,59,0.1); color: var(--danger); border: 1px solid rgba(255,59,59,0.2); }
+.log-title { font-weight: 600; font-size: 15px; margin-bottom: 4px; }
+.log-desc { font-size: 13px; color: var(--text2); line-height: 1.6; }
+.log-meta { display: flex; gap: 16px; margin-top: 10px; flex-wrap: wrap; }
+.log-meta-item { display: flex; align-items: center; gap: 6px; font-family: var(--font-cond); font-size: 11px; color: var(--text3); letter-spacing: 1px; }
+.log-meta-item i { font-size: 10px; }
+.log-actions { display: flex; gap: 6px; }
+.log-progress-bar {
+  margin-top: 10px;
+}
+.log-progress-label {
+  display: flex;
+  justify-content: space-between;
+  font-family: var(--font-cond);
+  font-size: 10px;
+  color: var(--text3);
+  letter-spacing: 1px;
+  margin-bottom: 4px;
+  text-transform: uppercase;
+}
+.log-filter-bar {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 20px;
+  flex-wrap: wrap;
+  align-items: center;
+}
+.log-filter-btn {
+  background: var(--surface2);
+  border: 1px solid var(--border2);
+  color: var(--text2);
+  padding: 6px 14px;
+  font-family: var(--font-cond);
+  font-size: 11px;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  cursor: pointer;
+  border-radius: 2px;
+  transition: all 0.2s;
+}
+.log-filter-btn:hover { background: var(--surface3); color: var(--text); }
+.log-filter-btn.active { background: rgba(0,212,255,0.1); border-color: var(--accent3); color: var(--accent3); }
+
+/* DIVISION MANAGER */
+.div-manage-card {
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  padding: 16px 20px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 10px;
+  transition: all 0.2s;
+}
+.div-manage-card:hover { border-color: var(--border2); background: var(--surface3); }
+.div-manage-left { display: flex; align-items: center; gap: 14px; }
+.div-manage-icon {
+  width: 36px; height: 36px;
+  display: flex; align-items: center; justify-content: center;
+  border-radius: 4px;
+  font-size: 14px;
+}
+.div-manage-name { font-family: var(--font-cond); font-size: 15px; letter-spacing: 1.5px; font-weight: 700; text-transform: uppercase; }
+.div-manage-count { font-size: 11px; color: var(--text3); margin-top: 2px; }
+.div-manage-actions { display: flex; gap: 8px; }
+
+/* Color swatches for division color picker */
+.color-swatches { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 8px; }
+.color-swatch {
+  width: 28px; height: 28px; border-radius: 3px; cursor: pointer;
+  border: 2px solid transparent; transition: all 0.2s;
+}
+.color-swatch:hover, .color-swatch.selected { border-color: white; transform: scale(1.15); }
+
+/* Icon grid for division icon picker */
+.icon-grid { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 8px; }
+.icon-opt {
+  width: 34px; height: 34px; display: flex; align-items: center; justify-content: center;
+  background: var(--surface3); border: 1px solid var(--border2); border-radius: 3px;
+  cursor: pointer; font-size: 14px; color: var(--text2); transition: all 0.2s;
+}
+.icon-opt:hover, .icon-opt.selected { background: rgba(232,255,0,0.1); border-color: var(--accent); color: var(--accent); }
+
+/* RESPONSIVE */
+@media (max-width: 1100px) {
+  .stats-grid { grid-template-columns: repeat(2,1fr); }
+  .divisions-grid { grid-template-columns: repeat(2,1fr); }
+  .main-target-metrics { grid-template-columns: repeat(2,1fr); }
+}
+@media (max-width: 780px) {
+  .layout { grid-template-columns: 1fr; }
+  .sidebar { display: none; }
+  .main { padding: 16px; }
+  .stats-grid { grid-template-columns: 1fr 1fr; }
+  .divisions-grid { grid-template-columns: 1fr; }
+  .form-row { grid-template-columns: 1fr; }
+}
+
+/* LOADING */
+.loading-screen {
+  position: fixed;
+  inset: 0;
+  background: var(--bg);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  z-index: 9998;
+  transition: opacity 0.5s;
+}
+.loading-logo {
+  font-family: var(--font-display);
+  font-size: 56px;
+  letter-spacing: 10px;
+  color: var(--accent);
+  margin-bottom: 8px;
+  animation: flicker 2s ease infinite;
+}
+.loading-sub {
+  font-family: var(--font-cond);
+  font-size: 11px;
+  letter-spacing: 4px;
+  color: var(--text3);
+  text-transform: uppercase;
+  margin-bottom: 32px;
+}
+@keyframes flicker {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.7; }
+}
+.loading-bar {
+  width: 200px;
+  height: 2px;
+  background: var(--surface3);
+  overflow: hidden;
+}
+.loading-fill {
+  height: 100%;
+  background: var(--accent);
+  animation: load 1.5s ease forwards;
+}
+@keyframes load {
+  from { width: 0; }
+  to { width: 100%; }
+}
+</style>
+</head>
+<body>
+
+<!-- LOADING SCREEN -->
+<div class="loading-screen" id="loadingScreen">
+  <div class="loading-logo">TENX</div>
+  <div class="loading-sub">Apparel · KPI Command Center</div>
+  <div class="loading-bar"><div class="loading-fill"></div></div>
+</div>
+
+<!-- HEADER -->
+<header>
+  <div class="logo">
+    <div class="logo-mark">TX</div>
+    <div>
+      <div class="logo-text"><span>TENX</span> APPAREL</div>
+    </div>
+  </div>
+  <div class="header-right">
+    <div class="live-badge">
+      <div class="live-dot"></div>
+      <span>Realtime</span>
+    </div>
+    <div class="year-selector">
+      <button onclick="changeYear(-1)"><i class="fas fa-chevron-left"></i></button>
+      <div class="year-display" id="yearDisplay">2025</div>
+      <button onclick="changeYear(1)"><i class="fas fa-chevron-right"></i></button>
+    </div>
+    <button class="btn btn-primary btn-sm" onclick="openModal('kpiModal')">
+      <i class="fas fa-plus"></i> Tambah KPI
+    </button>
+  </div>
+</header>
+
+<div class="layout">
+  <!-- SIDEBAR -->
+  <aside class="sidebar">
+    <div class="sidebar-section">
+      <div class="sidebar-label">Overview</div>
+      <div class="sidebar-item active" onclick="showPage('dashboard', this)">
+        <i class="fas fa-chart-line icon"></i> Dashboard
+      </div>
+      <div class="sidebar-item" onclick="showPage('mainTarget', this)">
+        <i class="fas fa-bullseye icon"></i> Target Utama
+      </div>
+      <div class="sidebar-item" onclick="showPage('history', this)">
+        <i class="fas fa-history icon"></i> History
+      </div>
+    </div>
+
+    <div class="divider"></div>
+
+    <div class="sidebar-section">
+      <div class="sidebar-label">Divisi</div>
+      <div id="sidebarDivisions">
+        <!-- Dinamis dari Firebase -->
+      </div>
+    </div>
+
+    <div class="divider"></div>
+
+    <div class="sidebar-section">
+      <div class="sidebar-label">Kelola</div>
+      <div class="sidebar-item" onclick="showPage('manage', this)">
+        <i class="fas fa-list icon"></i> Semua KPI
+      </div>
+      <div class="sidebar-item" onclick="showPage('divManage', this)">
+        <i class="fas fa-sitemap icon"></i> Kelola Divisi
+      </div>
+    </div>
+  </aside>
+
+  <!-- MAIN CONTENT -->
+  <main class="main">
+
+    <!-- =====================
+         DASHBOARD PAGE
+    ===================== -->
+    <div class="page active" id="page-dashboard">
+      <div class="page-header">
+        <div>
+          <div class="page-title">DASH<span>BOARD</span></div>
+          <div class="page-subtitle">RINGKASAN KPI SELURUH DIVISI · <span id="db-year">2025</span></div>
+        </div>
+        <button class="btn btn-secondary" onclick="openModal('kpiModal')">
+          <i class="fas fa-plus"></i> Tambah KPI
+        </button>
+      </div>
+
+      <!-- Stats -->
+      <div class="stats-grid" id="statsGrid">
+        <div class="stat-card" style="--card-color: var(--accent)">
+          <i class="fas fa-list stat-icon"></i>
+          <div class="stat-label">Total KPI</div>
+          <div class="stat-value" id="stat-total">0</div>
+          <div class="stat-change">Semua divisi</div>
+        </div>
+        <div class="stat-card" style="--card-color: var(--success)">
+          <i class="fas fa-check-circle stat-icon"></i>
+          <div class="stat-label">Tercapai</div>
+          <div class="stat-value" id="stat-achieved">0</div>
+          <div class="stat-change up" id="stat-achieved-pct">— %</div>
+        </div>
+        <div class="stat-card" style="--card-color: var(--warning)">
+          <i class="fas fa-clock stat-icon"></i>
+          <div class="stat-label">On Progress</div>
+          <div class="stat-value" id="stat-progress">0</div>
+          <div class="stat-change">Dalam proses</div>
+        </div>
+        <div class="stat-card" style="--card-color: var(--danger)">
+          <i class="fas fa-times-circle stat-icon"></i>
+          <div class="stat-label">Belum Tercapai</div>
+          <div class="stat-value" id="stat-missed">0</div>
+          <div class="stat-change down" id="stat-missed-pct">— %</div>
+        </div>
+      </div>
+
+      <!-- Division Overview -->
+      <div class="panel">
+        <div class="panel-header">
+          <div class="panel-title"><div class="dot"></div> Performa Per Divisi</div>
+        </div>
+        <div class="panel-body">
+          <div class="divisions-grid" id="divisionCards"></div>
+        </div>
+      </div>
+
+      <!-- Recent KPI Table -->
+      <div class="panel">
+        <div class="panel-header">
+          <div class="panel-title"><div class="dot"></div> KPI Terbaru</div>
+        </div>
+        <div class="panel-body" style="padding:0">
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>KPI</th>
+                  <th>Divisi</th>
+                  <th>Target</th>
+                  <th>Aktual</th>
+                  <th>Progress</th>
+                  <th>Status</th>
+                </tr>
+              </thead>
+              <tbody id="recentKpiTable">
+                <tr><td colspan="6"><div class="empty-state"><i class="fas fa-database"></i><p>Belum ada data</p></div></td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- =====================
+         MAIN TARGET PAGE
+    ===================== -->
+    <div class="page" id="page-mainTarget">
+      <div class="page-header">
+        <div>
+          <div class="page-title">TARGET <span>UTAMA</span></div>
+          <div class="page-subtitle">TUJUAN STRATEGIS PERUSAHAAN · <span id="mt-year">2025</span></div>
+        </div>
+        <button class="btn btn-primary" onclick="openModal('mainTargetModal')">
+          <i class="fas fa-plus"></i> Set Target
+        </button>
+      </div>
+
+      <div id="mainTargetContent">
+        <div class="empty-state">
+          <i class="fas fa-bullseye"></i>
+          <p>Belum ada target utama untuk tahun ini</p>
+          <br>
+          <button class="btn btn-primary" onclick="openModal('mainTargetModal')" style="margin-top:8px">
+            <i class="fas fa-plus"></i> Set Target Utama
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- =====================
+         HISTORY PAGE
+    ===================== -->
+    <div class="page" id="page-history">
+      <div class="page-header">
+        <div>
+          <div class="page-title">HISTORY <span>KPI</span></div>
+          <div class="page-subtitle">REKAM JEJAK CAPAIAN PER TAHUN</div>
+        </div>
+      </div>
+      <div class="panel">
+        <div class="panel-header">
+          <div class="panel-title"><div class="dot"></div> Timeline Tahunan</div>
+        </div>
+        <div class="panel-body">
+          <div id="historyTimeline">
+            <div class="empty-state"><i class="fas fa-history"></i><p>Belum ada data history</p></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- =====================
+         DIVISION PAGES (dynamic)
+    ===================== -->
+    <div class="page" id="page-divProduct">
+      <div id="content-divProduct"></div>
+    </div>
+    <div class="page" id="page-divSales">
+      <div id="content-divSales"></div>
+    </div>
+    <div class="page" id="page-divMarketing">
+      <div id="content-divMarketing"></div>
+    </div>
+    <div class="page" id="page-divFinance">
+      <div id="content-divFinance"></div>
+    </div>
+    <div class="page" id="page-divOperations">
+      <div id="content-divOperations"></div>
+    </div>
+    <div class="page" id="page-divHR">
+      <div id="content-divHR"></div>
+    </div>
+
+    <!-- =====================
+         MANAGE ALL KPI
+    ===================== -->
+    <div class="page" id="page-manage">
+      <div class="page-header">
+        <div>
+          <div class="page-title">SEMUA <span>KPI</span></div>
+          <div class="page-subtitle">KELOLA DATA KPI · <span id="mg-year">2025</span></div>
+        </div>
+        <button class="btn btn-primary" onclick="openModal('kpiModal')">
+          <i class="fas fa-plus"></i> Tambah KPI
+        </button>
+      </div>
+      <div class="panel">
+        <div class="panel-header">
+          <div class="panel-title"><div class="dot"></div> Daftar KPI</div>
+          <div style="display:flex;gap:8px;align-items:center">
+            <select id="filterDiv" onchange="renderManage()" style="width:160px;padding:7px 10px;font-size:12px">
+              <option value="">Semua Divisi</option>
+              <option value="Product">Product</option>
+              <option value="Sales">Sales</option>
+              <option value="Marketing">Marketing</option>
+              <option value="Finance">Finance</option>
+              <option value="Operations">Operations</option>
+              <option value="HR">HR</option>
+            </select>
+          </div>
+        </div>
+        <div class="panel-body" style="padding:0">
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>KPI</th>
+                  <th>Divisi</th>
+                  <th>Target</th>
+                  <th>Aktual</th>
+                  <th>Satuan</th>
+                  <th>Progress</th>
+                  <th>Status</th>
+                  <th>Aksi</th>
+                </tr>
+              </thead>
+              <tbody id="manageTable">
+                <tr><td colspan="8"><div class="empty-state"><i class="fas fa-database"></i><p>Belum ada data</p></div></td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- =====================
+         DIVISION MANAGEMENT
+    ===================== -->
+    <div class="page" id="page-divManage">
+      <div class="page-header">
+        <div>
+          <div class="page-title">KELOLA <span>DIVISI</span></div>
+          <div class="page-subtitle">TAMBAH, UBAH, ATAU HAPUS DIVISI</div>
+        </div>
+        <button class="btn btn-primary" onclick="openDivModal()">
+          <i class="fas fa-plus"></i> Tambah Divisi
+        </button>
+      </div>
+      <div class="panel">
+        <div class="panel-header">
+          <div class="panel-title"><div class="dot"></div> Daftar Divisi</div>
+          <div style="font-family:var(--font-cond);font-size:11px;color:var(--text3);letter-spacing:1px">Perubahan divisi langsung berlaku di seluruh sistem</div>
+        </div>
+        <div class="panel-body" id="divManageList">
+          <div class="empty-state"><i class="fas fa-sitemap"></i><p>Memuat divisi...</p></div>
+        </div>
+      </div>
+    </div>
+
+  </main>
+</div>
+
+<!-- =====================
+     MODAL: ADD/EDIT KPI
+===================== -->
+<div class="modal-overlay" id="kpiModal">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title" id="kpiModalTitle">TAMBAH KPI</div>
+      <button class="modal-close" onclick="closeModal('kpiModal')"><i class="fas fa-times"></i></button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="kpiId">
+      <div class="form-group">
+        <label>Nama KPI</label>
+        <input type="text" id="kpiName" placeholder="contoh: Gross Margin, Konversi Sales...">
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Divisi</label>
+          <select id="kpiDivision">
+            <option value="Product">Product</option>
+            <option value="Sales">Sales</option>
+            <option value="Marketing">Marketing</option>
+            <option value="Finance">Finance</option>
+            <option value="Operations">Operations</option>
+            <option value="HR">HR</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Satuan</label>
+          <input type="text" id="kpiUnit" placeholder="%, Rp, unit, hari...">
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Target</label>
+          <input type="number" id="kpiTarget" placeholder="0">
+        </div>
+        <div class="form-group">
+          <label>Aktual (Capaian)</label>
+          <input type="number" id="kpiActual" placeholder="0">
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Tahun</label>
+          <input type="number" id="kpiYear" placeholder="2025">
+        </div>
+        <div class="form-group">
+          <label>Status</label>
+          <select id="kpiStatus">
+            <option value="progress">On Progress</option>
+            <option value="achieved">Tercapai</option>
+            <option value="missed">Belum Tercapai</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-group">
+        <label>Keterangan</label>
+        <textarea id="kpiNote" placeholder="Catatan tambahan..."></textarea>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeModal('kpiModal')">Batal</button>
+      <button class="btn btn-primary" onclick="saveKpi()"><i class="fas fa-save"></i> Simpan</button>
+    </div>
+  </div>
+</div>
+
+<!-- =====================
+     MODAL: MAIN TARGET
+===================== -->
+<div class="modal-overlay" id="mainTargetModal">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title" id="mtModalTitle">SET TARGET UTAMA</div>
+      <button class="modal-close" onclick="closeModal('mainTargetModal')"><i class="fas fa-times"></i></button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="mtId">
+      <div class="form-row">
+        <div class="form-group">
+          <label>Tahun</label>
+          <input type="number" id="mtYear" placeholder="2025">
+        </div>
+        <div class="form-group">
+          <label>Target Revenue (Rp)</label>
+          <input type="number" id="mtRevenue" placeholder="0">
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Target Unit Terjual</label>
+          <input type="number" id="mtUnits" placeholder="0">
+        </div>
+        <div class="form-group">
+          <label>Target Margin (%)</label>
+          <input type="number" id="mtMargin" placeholder="0">
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Target SKU Baru</label>
+          <input type="number" id="mtSku" placeholder="0">
+        </div>
+        <div class="form-group">
+          <label>Target NPS Score</label>
+          <input type="number" id="mtNps" placeholder="0">
+        </div>
+      </div>
+      <div class="form-group">
+        <label>Tema / Tagline Tahun Ini</label>
+        <input type="text" id="mtTheme" placeholder="contoh: Ekspansi & Kualitas 2025">
+      </div>
+      <div class="form-group">
+        <label>Catatan Strategis</label>
+        <textarea id="mtNote" placeholder="Strategi utama dan fokus tahun ini..."></textarea>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeModal('mainTargetModal')">Batal</button>
+      <button class="btn btn-primary" onclick="saveMainTarget()"><i class="fas fa-save"></i> Simpan</button>
+    </div>
+  </div>
+</div>
+
+<!-- =====================
+     MODAL: ADD/EDIT NOTE
+===================== -->
+<!-- =====================
+     MODAL: CATATAN HARIAN (PER DIVISI)
+===================== -->
+<div class="modal-overlay" id="noteModal">
+  <div class="modal" style="width:640px">
+    <div class="modal-header">
+      <div>
+        <div class="modal-title" id="noteModalTitle">TAMBAH CATATAN</div>
+        <div id="noteModalDivBadge" style="font-family:var(--font-cond);font-size:11px;letter-spacing:2px;margin-top:3px;color:var(--text3)"></div>
+      </div>
+      <button class="modal-close" onclick="closeModal('noteModal')"><i class="fas fa-times"></i></button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="noteId">
+      <input type="hidden" id="noteDivisionHidden">
+      <input type="hidden" id="noteYear">
+      <input type="hidden" id="noteProgress" value="0">
+
+      <div class="form-row">
+        <div class="form-group">
+          <label>Tanggal</label>
+          <input type="date" id="noteDate">
+        </div>
+        <div class="form-group">
+          <label>Tipe Catatan</label>
+          <select id="noteType" onchange="toggleNoteFields(this.value)">
+            <option value="income">💰 Pemasukan</option>
+            <option value="customer">💬 Chat / Customer</option>
+            <option value="progress">📈 Update Progres</option>
+            <option value="issue">⚠️ Kendala</option>
+            <option value="milestone">🏆 Milestone</option>
+            <option value="other">📝 Lainnya</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- Field pemasukan (tampil kalau tipe = income) -->
+      <div id="incomeFields" style="display:none">
+        <div style="background:rgba(0,230,118,0.05);border:1px solid rgba(0,230,118,0.15);padding:14px 16px;border-radius:3px;margin-bottom:16px">
+          <div style="font-family:var(--font-cond);font-size:10px;letter-spacing:2px;color:var(--success);text-transform:uppercase;margin-bottom:10px">📊 Detail Pemasukan — otomatis terintegrasi ke Target Revenue</div>
+          <div class="form-row">
+            <div class="form-group" style="margin-bottom:0">
+              <label>Nominal Pemasukan (Rp)</label>
+              <input type="number" id="noteIncome" placeholder="0" min="0">
+            </div>
+            <div class="form-group" style="margin-bottom:0">
+              <label>Jumlah Unit Terjual</label>
+              <input type="number" id="noteUnits" placeholder="0" min="0">
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Field customer (tampil kalau tipe = customer) -->
+      <div id="customerFields" style="display:none">
+        <div style="background:rgba(0,212,255,0.05);border:1px solid rgba(0,212,255,0.15);padding:14px 16px;border-radius:3px;margin-bottom:16px">
+          <div style="font-family:var(--font-cond);font-size:10px;letter-spacing:2px;color:var(--accent3);text-transform:uppercase;margin-bottom:10px">💬 Data Customer / Interaksi</div>
+          <div class="form-row">
+            <div class="form-group" style="margin-bottom:0">
+              <label>Jumlah Chat / Inquiry Baru</label>
+              <input type="number" id="noteChatCount" placeholder="0" min="0">
+            </div>
+            <div class="form-group" style="margin-bottom:0">
+              <label>Closing (yang jadi beli)</label>
+              <input type="number" id="noteClosing" placeholder="0" min="0">
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label>Judul / Ringkasan</label>
+        <input type="text" id="noteTitle" placeholder="contoh: Pemasukan Senin 3 Juni, 12 chat baru dari IG...">
+      </div>
+      <div class="form-group">
+        <label>Keterangan Lengkap (opsional)</label>
+        <textarea id="noteDesc" placeholder="Detail kejadian, kendala, atau catatan tambahan..." style="min-height:90px"></textarea>
+      </div>
+      <div class="form-group">
+        <label>KPI Terkait (opsional)</label>
+        <select id="noteKpi">
+          <option value="">— Pilih KPI —</option>
+        </select>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeModal('noteModal')">Batal</button>
+      <button class="btn btn-primary" onclick="saveNote()"><i class="fas fa-save"></i> Simpan Catatan</button>
+    </div>
+  </div>
+</div>
+
+<!-- =====================
+     MODAL: ADD/EDIT DIVISION
+===================== -->
+<div class="modal-overlay" id="divModal">
+  <div class="modal" style="width:500px">
+    <div class="modal-header">
+      <div class="modal-title" id="divModalTitle">TAMBAH DIVISI</div>
+      <button class="modal-close" onclick="closeModal('divModal')"><i class="fas fa-times"></i></button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="divModalId">
+      <div class="form-group">
+        <label>Nama Divisi</label>
+        <input type="text" id="divModalName" placeholder="contoh: Creative, Logistik, R&D...">
+      </div>
+      <div class="form-group">
+        <label>Warna Divisi</label>
+        <input type="text" id="divModalColor" placeholder="#e8ff00" style="margin-bottom:8px">
+        <div class="color-swatches" id="colorSwatches"></div>
+      </div>
+      <div class="form-group">
+        <label>Icon</label>
+        <input type="text" id="divModalIcon" placeholder="fa-tshirt" style="margin-bottom:8px">
+        <div class="icon-grid" id="iconGrid"></div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeModal('divModal')">Batal</button>
+      <button class="btn btn-primary" onclick="saveDivision()"><i class="fas fa-save"></i> Simpan</button>
+    </div>
+  </div>
+</div>
+
+<!-- CONFIRM DIALOG -->
+<div class="confirm-overlay" id="confirmOverlay">
+  <div class="confirm-box">
+    <h3>HAPUS DATA</h3>
+    <p id="confirmText">Yakin ingin menghapus data ini?</p>
+    <div class="confirm-actions">
+      <button class="btn btn-secondary" onclick="closeConfirm()">Batal</button>
+      <button class="btn btn-danger" onclick="executeDelete()">Hapus</button>
+    </div>
+  </div>
+</div>
+
+<!-- TOAST -->
+<div class="toast-container" id="toastContainer"></div>
+
+<!-- =====================
+     FIREBASE & APP JS
+===================== -->
+<script>
+// ============================
+// FIREBASE CONFIG — ISI DI SINI
+// ============================
+const firebaseConfig = {
+  apiKey: "AIzaSyBQ3TbvvfJTiY8mgNooNGDw2k3kDTW9fX0",
+  authDomain: "kpiproject-65b1b.firebaseapp.com",
+  databaseURL: "https://kpiproject-65b1b-default-rtdb.asia-southeast1.firebasedatabase.app",
+  projectId: "kpiproject-65b1b",
+  storageBucket: "kpiproject-65b1b.firebasestorage.app",
+  messagingSenderId: "324458420392",
+  appId: "1:324458420392:web:c6472416951d288cc70a9d",
+  measurementId: "G-F24QFFPTL3"
+};
+
+// Init Firebase
+firebase.initializeApp(firebaseConfig);
+const db = firebase.database();
+
+// ============================
+// STATE
+// ============================
+let currentYear = new Date().getFullYear();
+let allKpis = {};
+let allMainTargets = {};
+let allNotes = {};
+let allDivisions = {};
+let confirmCallback = null;
+let currentPage = 'dashboard';
+let activeNoteFilter = 'all';
+
+// Default divisions (used only first time / as fallback)
+const DEFAULT_DIVISIONS = [
+  { id: 'Product',    label: 'Product',    icon: 'fa-tshirt',      color: '#e8ff00' },
+  { id: 'Sales',      label: 'Sales',      icon: 'fa-dollar-sign', color: '#00e676' },
+  { id: 'Marketing',  label: 'Marketing',  icon: 'fa-bullhorn',    color: '#00d4ff' },
+  { id: 'Finance',    label: 'Finance',    icon: 'fa-coins',       color: '#ff6b00' },
+  { id: 'Operations', label: 'Operations', icon: 'fa-cogs',        color: '#ff6bde' },
+  { id: 'HR',         label: 'HR',         icon: 'fa-users',       color: '#ffab00' }
+];
+
+let DIVISIONS = [...DEFAULT_DIVISIONS];
+
+// ============================
+// INIT
+// ============================
+window.addEventListener('load', () => {
+  document.getElementById('yearDisplay').textContent = currentYear;
+
+  // Realtime listener — Divisions (load first)
+  db.ref('divisions').on('value', snap => {
+    const data = snap.val();
+    if (data && Object.keys(data).length > 0) {
+      allDivisions = data;
+      DIVISIONS = Object.entries(data).map(([k,v]) => ({ id: v.id || k, label: v.label, icon: v.icon, color: v.color, _key: k }));
+    } else {
+      // Seed default divisions
+      allDivisions = {};
+      DIVISIONS = [...DEFAULT_DIVISIONS];
+      DEFAULT_DIVISIONS.forEach(d => {
+        db.ref('divisions').push({ id: d.id, label: d.label, icon: d.icon, color: d.color });
+      });
+    }
+    renderSidebarDivisions();
+    renderAll();
+    renderDivManage();
+    updateDivisionSelects();
+  });
+
+  // Realtime listener — KPIs
+  db.ref('kpis').on('value', snap => {
+    allKpis = snap.val() || {};
+    renderAll();
+  });
+
+  // Realtime listener — Main Targets
+  db.ref('mainTargets').on('value', snap => {
+    allMainTargets = snap.val() || {};
+    renderMainTarget();
+    renderHistory();
+  });
+
+  // Realtime listener — Notes
+  db.ref('notes').on('value', snap => {
+    allNotes = snap.val() || {};
+    renderNotes();
+    renderNoteStats();
+    renderMainTarget();
+  });
+
+  // Hide loading
+  setTimeout(() => {
+    const ls = document.getElementById('loadingScreen');
+    ls.style.opacity = '0';
+    setTimeout(() => ls.style.display = 'none', 500);
+  }, 1800);
+
+  // Init color swatches & icon grid
+  buildColorSwatches();
+  buildIconGrid();
+
+  // Set today's date default for notes
+  document.getElementById('noteDate').valueAsDate = new Date();
+  document.getElementById('noteYear').value = currentYear;
+});
+
+// ============================
+// YEAR NAV
+// ============================
+function changeYear(d) {
+  currentYear += d;
+  document.getElementById('yearDisplay').textContent = currentYear;
+  document.getElementById('db-year').textContent = currentYear;
+  document.getElementById('mt-year').textContent = currentYear;
+  document.getElementById('mg-year').textContent = currentYear;
+  renderAll();
+  renderMainTarget();
+  renderNotes();
+  renderNoteStats();
+}
+
+// ============================
+// GET KPIS FOR YEAR
+// ============================
+function getKpisForYear(year) {
+  return Object.entries(allKpis)
+    .filter(([,v]) => v.year == year)
+    .map(([k,v]) => ({ id: k, ...v }));
+}
+
+function getKpisForDiv(div, year) {
+  return getKpisForYear(year).filter(k => k.division === div);
+}
+
+// ============================
+// RENDER STATS
+// ============================
+function renderStats() {
+  const kpis = getKpisForYear(currentYear);
+  const total = kpis.length;
+  const achieved = kpis.filter(k => k.status === 'achieved').length;
+  const progress = kpis.filter(k => k.status === 'progress').length;
+  const missed = kpis.filter(k => k.status === 'missed').length;
+  document.getElementById('stat-total').textContent = total;
+  document.getElementById('stat-achieved').textContent = achieved;
+  document.getElementById('stat-progress').textContent = progress;
+  document.getElementById('stat-missed').textContent = missed;
+  document.getElementById('stat-achieved-pct').textContent = total ? Math.round(achieved/total*100)+'%' : '—';
+  document.getElementById('stat-missed-pct').textContent = total ? Math.round(missed/total*100)+'%' : '—';
+}
+
+// ============================
+// RENDER DIVISION CARDS
+// ============================
+function renderDivisionCards() {
+  const container = document.getElementById('divisionCards');
+  const kpis = getKpisForYear(currentYear);
+  container.innerHTML = '';
+
+  DIVISIONS.forEach(div => {
+    const dkpis = kpis.filter(k => k.division === div.id);
+    const total = dkpis.length;
+    const achieved = dkpis.filter(k => k.status === 'achieved').length;
+    const pct = total ? Math.round(achieved/total*100) : 0;
+    const color = div.color;
+
+    // progress color
+    let progColor = pct >= 80 ? 'var(--success)' : pct >= 50 ? 'var(--warning)' : 'var(--danger)';
+    if (total === 0) progColor = 'var(--text3)';
+
+    container.innerHTML += `
+      <div class="division-card" style="--div-color:${color}" onclick="showPage('div${div.id}', null)">
+        <div class="div-header">
+          <div>
+            <div class="div-name">${div.label}</div>
+            <div class="div-kpi-count">${total} KPI terdaftar</div>
+          </div>
+          <div class="div-icon"><i class="fas ${div.icon}"></i></div>
+        </div>
+        <div class="div-score">${pct}<small>%</small></div>
+        <div class="progress-wrap">
+          <div class="progress-bar">
+            <div class="progress-fill" style="width:${pct}%;background:${progColor}"></div>
+          </div>
+          <div class="progress-label" style="color:${progColor}">${achieved}/${total}</div>
+        </div>
+      </div>`;
+  });
+}
+
+// ============================
+// RENDER RECENT TABLE
+// ============================
+function renderRecentTable() {
+  const tbody = document.getElementById('recentKpiTable');
+  const kpis = getKpisForYear(currentYear).slice(0,10);
+  if (!kpis.length) {
+    tbody.innerHTML = `<tr><td colspan="6"><div class="empty-state"><i class="fas fa-database"></i><p>Belum ada data untuk tahun ${currentYear}</p></div></td></tr>`;
+    return;
+  }
+  tbody.innerHTML = kpis.map(k => {
+    const pct = k.target ? Math.min(Math.round(k.actual/k.target*100),999) : 0;
+    const div = DIVISIONS.find(d => d.id === k.division);
+    const col = div ? div.color : '#999';
+    return `<tr>
+      <td><b>${esc(k.name)}</b></td>
+      <td><span style="color:${col};font-family:var(--font-cond);font-size:12px;letter-spacing:1px">${esc(k.division)}</span></td>
+      <td>${fmt(k.target)} ${esc(k.unit||'')}</td>
+      <td>${fmt(k.actual)} ${esc(k.unit||'')}</td>
+      <td>
+        <div class="progress-wrap">
+          <div class="progress-bar"><div class="progress-fill" style="width:${Math.min(pct,100)}%;background:${pct>=100?'var(--success)':pct>=60?'var(--warning)':'var(--danger)'}"></div></div>
+          <div class="progress-label" style="color:${pct>=100?'var(--success)':pct>=60?'var(--warning)':'var(--danger)'}">${pct}%</div>
+        </div>
+      </td>
+      <td>${statusBadge(k.status)}</td>
+    </tr>`;
+  }).join('');
+}
+
+// ============================
+// RENDER MANAGE TABLE
+// ============================
+function renderManage() {
+  const tbody = document.getElementById('manageTable');
+  const filter = document.getElementById('filterDiv').value;
+  let kpis = getKpisForYear(currentYear);
+  if (filter) kpis = kpis.filter(k => k.division === filter);
+  if (!kpis.length) {
+    tbody.innerHTML = `<tr><td colspan="8"><div class="empty-state"><i class="fas fa-database"></i><p>Belum ada data</p></div></td></tr>`;
+    return;
+  }
+  tbody.innerHTML = kpis.map(k => {
+    const pct = k.target ? Math.min(Math.round(k.actual/k.target*100),999) : 0;
+    const div = DIVISIONS.find(d => d.id === k.division);
+    const col = div ? div.color : '#999';
+    return `<tr>
+      <td><b>${esc(k.name)}</b>${k.note?`<br><small style="color:var(--text3)">${esc(k.note)}</small>`:''}</td>
+      <td><span style="color:${col};font-family:var(--font-cond);font-size:12px;letter-spacing:1px">${esc(k.division)}</span></td>
+      <td>${fmt(k.target)}</td>
+      <td>${fmt(k.actual)}</td>
+      <td>${esc(k.unit||'-')}</td>
+      <td>
+        <div class="progress-wrap">
+          <div class="progress-bar"><div class="progress-fill" style="width:${Math.min(pct,100)}%;background:${pct>=100?'var(--success)':pct>=60?'var(--warning)':'var(--danger)'}"></div></div>
+          <div class="progress-label" style="color:${pct>=100?'var(--success)':pct>=60?'var(--warning)':'var(--danger)'}">${pct}%</div>
+        </div>
+      </td>
+      <td>${statusBadge(k.status)}</td>
+      <td>
+        <button class="btn btn-secondary btn-icon btn-sm" onclick="editKpi('${k.id}')" title="Edit"><i class="fas fa-pen"></i></button>
+        <button class="btn btn-danger btn-icon btn-sm" onclick="confirmDelete('kpi','${k.id}','${esc(k.name)}')" title="Hapus" style="margin-left:4px"><i class="fas fa-trash"></i></button>
+      </td>
+    </tr>`;
+  }).join('');
+}
+
+// ============================
+// RENDER DIVISION PAGE
+// ============================
+function renderDivPage(div) {
+  const container = document.getElementById(`content-div${div.id}`);
+  if (!container) return;
+  const kpis = getKpisForDiv(div.id, currentYear);
+  const total = kpis.length;
+  const achieved = kpis.filter(k => k.status === 'achieved').length;
+  const pct = total ? Math.round(achieved/total*100) : 0;
+
+  // Notes summary for this division
+  const divNotes = Object.values(allNotes).filter(n => n.division === div.id && n.year == currentYear);
+  const totalIncome = divNotes.filter(n=>n.type==='income').reduce((s,n)=>s+(n.income||0),0);
+  const totalUnits = divNotes.filter(n=>n.type==='income').reduce((s,n)=>s+(n.units||0),0);
+  const totalChats = divNotes.filter(n=>n.type==='customer').reduce((s,n)=>s+(n.chatCount||0),0);
+  const totalClosing = divNotes.filter(n=>n.type==='customer').reduce((s,n)=>s+(n.closing||0),0);
+
+  let rows = '';
+  if (kpis.length) {
+    rows = kpis.map(k => {
+      const p = k.target ? Math.min(Math.round(k.actual/k.target*100),999) : 0;
+      return `<tr>
+        <td><b>${esc(k.name)}</b>${k.note?`<br><small style="color:var(--text3)">${esc(k.note)}</small>`:''}</td>
+        <td>${fmt(k.target)} ${esc(k.unit||'')}</td>
+        <td>${fmt(k.actual)} ${esc(k.unit||'')}</td>
+        <td>
+          <div class="progress-wrap">
+            <div class="progress-bar"><div class="progress-fill" style="width:${Math.min(p,100)}%;background:${p>=100?'var(--success)':p>=60?'var(--warning)':'var(--danger)'}"></div></div>
+            <div class="progress-label" style="color:${p>=100?'var(--success)':p>=60?'var(--warning)':'var(--danger)'}">${p}%</div>
+          </div>
+        </td>
+        <td>${statusBadge(k.status)}</td>
+        <td>
+          <button class="btn btn-secondary btn-icon btn-sm" onclick="editKpi('${k.id}')" title="Edit"><i class="fas fa-pen"></i></button>
+          <button class="btn btn-danger btn-icon btn-sm" onclick="confirmDelete('kpi','${k.id}','${esc(k.name)}')" title="Hapus" style="margin-left:4px"><i class="fas fa-trash"></i></button>
+        </td>
+      </tr>`;
+    }).join('');
+  } else {
+    rows = `<tr><td colspan="6"><div class="empty-state"><i class="fas fa-database"></i><p>Belum ada KPI untuk divisi ini</p></div></td></tr>`;
+  }
+
+  // Notes stat cards for division
+  const noteCountByType = { income:0, customer:0, progress:0, issue:0, milestone:0, other:0 };
+  divNotes.forEach(n => { if (noteCountByType[n.type]!==undefined) noteCountByType[n.type]++; });
+
+  container.innerHTML = `
+    <div class="page-header">
+      <div>
+        <div class="page-title" style="color:${div.color}">${esc(div.label).toUpperCase()} <span style="color:var(--text2);font-size:0.6em">/ ${currentYear}</span></div>
+        <div class="page-subtitle">KPI & CATATAN HARIAN DIVISI ${esc(div.label).toUpperCase()}</div>
+      </div>
+      <div style="display:flex;gap:8px">
+        <button class="btn btn-secondary" onclick="openKpiForDiv('${div.id}')">
+          <i class="fas fa-plus"></i> Tambah KPI
+        </button>
+        <button class="btn btn-primary" onclick="openNoteModal('${div.id}')">
+          <i class="fas fa-book"></i> Tambah Catatan
+        </button>
+      </div>
+    </div>
+
+    <!-- KPI Stats -->
+    <div class="stats-grid" style="grid-template-columns:repeat(3,1fr);margin-bottom:24px">
+      <div class="stat-card" style="--card-color:${div.color}">
+        <i class="fas fa-list stat-icon"></i>
+        <div class="stat-label">Total KPI</div>
+        <div class="stat-value" style="color:${div.color}">${total}</div>
+        <div class="stat-change">Divisi ${esc(div.label)}</div>
+      </div>
+      <div class="stat-card" style="--card-color:var(--success)">
+        <i class="fas fa-check-circle stat-icon"></i>
+        <div class="stat-label">Tercapai</div>
+        <div class="stat-value">${achieved}</div>
+        <div class="stat-change up">${pct}%</div>
+      </div>
+      <div class="stat-card" style="--card-color:var(--warning)">
+        <i class="fas fa-chart-bar stat-icon"></i>
+        <div class="stat-label">Skor Divisi</div>
+        <div class="stat-value" style="color:${pct>=80?'var(--success)':pct>=50?'var(--warning)':'var(--danger)'}">${pct}%</div>
+        <div class="stat-change">Tingkat capaian</div>
+      </div>
+    </div>
+
+    <!-- Catatan Harian Stats -->
+    <div class="stats-grid" style="grid-template-columns:repeat(4,1fr);margin-bottom:8px">
+      <div class="stat-card" style="--card-color:var(--success)">
+        <i class="fas fa-coins stat-icon"></i>
+        <div class="stat-label">Total Pemasukan</div>
+        <div class="stat-value" style="font-size:28px;color:var(--success)">${fmtBig(totalIncome)}</div>
+        <div class="stat-change">${fmt(totalUnits)} unit · ${noteCountByType.income} catatan</div>
+        ${(()=>{
+          const mt = Object.values(allMainTargets).find(t => t.year == currentYear);
+          if (mt && mt.revenue > 0 && totalIncome > 0) {
+            const allInc = getTotalIncomeForYear(currentYear);
+            const pctTarget = Math.min(Math.round(allInc / mt.revenue * 100), 999);
+            const pc = pctTarget >= 100 ? 'var(--success)' : pctTarget >= 60 ? 'var(--warning)' : 'var(--danger)';
+            return `<div style="margin-top:10px">
+              <div style="font-family:var(--font-cond);font-size:9px;letter-spacing:1px;color:var(--text3);margin-bottom:4px">TOTAL SEMUA DIVISI VS TARGET: ${pctTarget}%</div>
+              <div style="height:4px;background:rgba(255,255,255,0.06);overflow:hidden"><div style="height:100%;width:${Math.min(pctTarget,100)}%;background:${pc}"></div></div>
+            </div>`;
+          }
+          return '';
+        })()}
+      </div>
+      <div class="stat-card" style="--card-color:var(--accent3)">
+        <i class="fas fa-comments stat-icon"></i>
+        <div class="stat-label">Chat / Inquiry</div>
+        <div class="stat-value" style="font-size:28px;color:var(--accent3)">${fmt(totalChats)}</div>
+        <div class="stat-change">${fmt(totalClosing)} closing · ${totalChats>0?Math.round(totalClosing/totalChats*100):0}% rate</div>
+      </div>
+      <div class="stat-card" style="--card-color:var(--danger)">
+        <i class="fas fa-exclamation-triangle stat-icon"></i>
+        <div class="stat-label">Kendala Tercatat</div>
+        <div class="stat-value" style="font-size:28px;color:var(--danger)">${noteCountByType.issue}</div>
+        <div class="stat-change">Issues · ${currentYear}</div>
+      </div>
+      <div class="stat-card" style="--card-color:var(--warning)">
+        <i class="fas fa-flag stat-icon"></i>
+        <div class="stat-label">Milestone</div>
+        <div class="stat-value" style="font-size:28px;color:var(--warning)">${noteCountByType.milestone}</div>
+        <div class="stat-change">Pencapaian penting</div>
+      </div>
+    </div>
+
+    <!-- KPI Table -->
+    <div class="panel" style="margin-top:24px">
+      <div class="panel-header">
+        <div class="panel-title"><div class="dot" style="background:${div.color}"></div> Daftar KPI ${esc(div.label)}</div>
+      </div>
+      <div class="panel-body" style="padding:0">
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr><th>KPI</th><th>Target</th><th>Aktual</th><th>Progress</th><th>Status</th><th>Aksi</th></tr>
+            </thead>
+            <tbody>${rows}</tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- Catatan Harian Panel -->
+    <div class="panel" style="margin-top:24px">
+      <div class="panel-header">
+        <div class="panel-title"><div class="dot" style="background:var(--accent3)"></div> Catatan Harian — ${esc(div.label)}</div>
+        <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+          <input type="text" id="noteSearch-${div.id}" placeholder="Cari catatan..." style="width:160px;padding:6px 10px;font-size:12px" oninput="renderDivNotes('${div.id}','${div.color}')">
+          <select id="noteFilter-${div.id}" onchange="renderDivNotes('${div.id}','${div.color}')" style="padding:6px 10px;font-size:12px;width:140px">
+            <option value="all">Semua Tipe</option>
+            ${getDivNoteConfig(div.id).types.map(t => `<option value="${t}">${TYPE_LABELS[t]}</option>`).join('')}
+          </select>
+          <button class="btn btn-primary btn-sm" onclick="openNoteModal('${div.id}')">
+            <i class="fas fa-plus"></i> Tambah
+          </button>
+        </div>
+      </div>
+      <div class="panel-body">
+        <div id="notes-div-${div.id}">
+          <div class="empty-state"><i class="fas fa-book-open"></i><p>Memuat catatan...</p></div>
+        </div>
+      </div>
+    </div>`;
+
+  // Render notes after DOM is ready
+  setTimeout(() => renderDivNotes(div.id, div.color), 0);
+}
+
+// ============================
+// HELPER: total income from notes
+// ============================
+function getTotalIncomeForYear(year) {
+  return Object.values(allNotes)
+    .filter(n => n.type === 'income' && n.year == year)
+    .reduce((s, n) => s + (n.income || 0), 0);
+}
+
+// ============================
+// RENDER MAIN TARGET
+// ============================
+function renderMainTarget() {
+  document.getElementById('mt-year').textContent = currentYear;
+  const container = document.getElementById('mainTargetContent');
+  // find target for current year
+  const entry = Object.entries(allMainTargets).find(([,v]) => v.year == currentYear);
+
+  if (!entry) {
+    container.innerHTML = `
+      <div class="empty-state">
+        <i class="fas fa-bullseye"></i>
+        <p>Belum ada target utama untuk tahun ${currentYear}</p>
+        <br>
+        <button class="btn btn-primary" onclick="openModal('mainTargetModal')" style="margin-top:8px">
+          <i class="fas fa-plus"></i> Set Target Utama
+        </button>
+      </div>`;
+    return;
+  }
+
+  const [id, t] = entry;
+  const kpis = getKpisForYear(currentYear);
+  const achieved = kpis.filter(k => k.status === 'achieved').length;
+  const overall = kpis.length ? Math.round(achieved/kpis.length*100) : 0;
+
+  const actualRevenue = getTotalIncomeForYear(currentYear);
+  const revPct = t.revenue > 0 ? Math.min(Math.round(actualRevenue / t.revenue * 100), 999) : 0;
+  const revColor = revPct >= 100 ? 'var(--success)' : revPct >= 60 ? 'var(--warning)' : 'var(--danger)';
+  const revRemaining = Math.max(t.revenue - actualRevenue, 0);
+
+  container.innerHTML = `
+    <div class="main-target-hero">
+      <div class="target-year-row">
+        <div class="target-year-badge">${t.year}</div>
+        <div class="target-year-desc">
+          <h3>${esc(t.theme || 'TARGET UTAMA')}</h3>
+          <p>${esc(t.note || 'Tujuan strategis tahunan perusahaan')}</p>
+        </div>
+      </div>
+      <div class="main-target-metrics">
+        <div class="metric-item">
+          <div class="metric-label">Target Revenue</div>
+          <div class="metric-value accent">Rp ${fmtBig(t.revenue)}</div>
+        </div>
+        <div class="metric-item">
+          <div class="metric-label">Target Unit</div>
+          <div class="metric-value accent">${fmt(t.units)} unit</div>
+        </div>
+        <div class="metric-item">
+          <div class="metric-label">Target Margin</div>
+          <div class="metric-value accent">${t.margin}%</div>
+        </div>
+        <div class="metric-item">
+          <div class="metric-label">Target SKU Baru</div>
+          <div class="metric-value accent">${t.sku} SKU</div>
+        </div>
+      </div>
+
+      <!-- LIVE REVENUE PROGRESS -->
+      <div style="margin-top:24px;padding-top:20px;border-top:1px solid rgba(232,255,0,0.15)">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;flex-wrap:wrap;gap:8px">
+          <div>
+            <div style="font-family:var(--font-cond);font-size:10px;letter-spacing:3px;color:var(--text3);text-transform:uppercase;margin-bottom:4px">PROGRES REVENUE AKTUAL</div>
+            <div style="display:flex;align-items:baseline;gap:10px;flex-wrap:wrap">
+              <span style="font-family:var(--font-display);font-size:32px;letter-spacing:2px;color:${revColor}">Rp ${fmtBig(actualRevenue)}</span>
+              <span style="font-family:var(--font-cond);font-size:13px;color:var(--text2)">dari Rp ${fmtBig(t.revenue)}</span>
+            </div>
+          </div>
+          <div style="text-align:right">
+            <div style="font-family:var(--font-display);font-size:42px;letter-spacing:2px;color:${revColor};line-height:1">${revPct}%</div>
+            <div style="font-family:var(--font-cond);font-size:11px;color:var(--text3);margin-top:2px">${revPct >= 100 ? '🎯 TARGET TERCAPAI!' : 'Sisa: Rp ' + fmtBig(revRemaining)}</div>
+          </div>
+        </div>
+        <div style="position:relative;height:12px;background:rgba(255,255,255,0.06);border-radius:0;overflow:hidden">
+          <div style="height:100%;width:${Math.min(revPct,100)}%;background:${revColor};transition:width 1s cubic-bezier(0.4,0,0.2,1);position:relative">
+            ${revPct > 5 ? `<div style="position:absolute;right:0;top:0;bottom:0;width:3px;background:rgba(255,255,255,0.4)"></div>` : ''}
+          </div>
+        </div>
+        <div style="display:flex;justify-content:space-between;margin-top:6px;font-family:var(--font-cond);font-size:10px;color:var(--text3);letter-spacing:1px">
+          <span>Rp 0</span>
+          <span>Rp ${fmtBig(t.revenue)}</span>
+        </div>
+      </div>
+    </div>
+    <div class="stats-grid" style="grid-template-columns:repeat(3,1fr);margin-bottom:24px">
+      <div class="stat-card" style="--card-color:var(--accent)">
+        <div class="stat-label">Overall KPI Score</div>
+        <div class="stat-value">${overall}%</div>
+        <div class="stat-change">${kpis.length} KPI terdaftar</div>
+      </div>
+      <div class="stat-card" style="--card-color:var(--success)">
+        <div class="stat-label">Target NPS</div>
+        <div class="stat-value">${t.nps}</div>
+        <div class="stat-change">Net Promoter Score</div>
+      </div>
+      <div class="stat-card" style="--card-color:var(--accent2)">
+        <div class="stat-label">SKU Target</div>
+        <div class="stat-value">${t.sku}</div>
+        <div class="stat-change">Produk baru tahun ini</div>
+      </div>
+    </div>
+    <div style="display:flex;gap:12px;justify-content:flex-end">
+      <button class="btn btn-secondary" onclick="editMainTarget('${id}')"><i class="fas fa-pen"></i> Edit Target</button>
+      <button class="btn btn-danger" onclick="confirmDelete('mainTarget','${id}','Target ${t.year}')"><i class="fas fa-trash"></i> Hapus</button>
+    </div>`;
+}
+
+// ============================
+// RENDER HISTORY
+// ============================
+function renderHistory() {
+  const container = document.getElementById('historyTimeline');
+  const years = [...new Set(
+    Object.values(allKpis).map(k => k.year).concat(
+    Object.values(allMainTargets).map(t => t.year))
+  )].sort((a,b) => b-a);
+
+  if (!years.length) {
+    container.innerHTML = `<div class="empty-state"><i class="fas fa-history"></i><p>Belum ada data history</p></div>`;
+    return;
+  }
+
+  container.innerHTML = `<div class="timeline">${years.map(y => {
+    const kpis = getKpisForYear(y);
+    const total = kpis.length;
+    const achieved = kpis.filter(k => k.status === 'achieved').length;
+    const missed = kpis.filter(k => k.status === 'missed').length;
+    const pct = total ? Math.round(achieved/total*100) : 0;
+    const mt = Object.values(allMainTargets).find(t => t.year == y);
+    const dotClass = pct >= 80 ? 'achieved' : pct >= 50 ? 'partial' : total ? 'missed' : '';
+
+    return `<div class="timeline-item">
+      <div class="timeline-dot ${dotClass}"></div>
+      <div class="timeline-year">${y}</div>
+      <div class="timeline-content">
+        ${mt ? `<div style="margin-bottom:10px;padding-bottom:10px;border-bottom:1px solid var(--border)">
+          <span class="badge badge-info" style="margin-bottom:6px">TARGET UTAMA</span>
+          <div style="font-weight:600;margin-bottom:2px">${esc(mt.theme||'Target '+y)}</div>
+          <div style="font-size:12px;color:var(--text2)">Revenue: Rp ${fmtBig(mt.revenue)} · Margin: ${mt.margin}% · Unit: ${fmt(mt.units)}</div>
+        </div>` : ''}
+        <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-top:${mt?0:4}px">
+          <div><div style="font-size:10px;color:var(--text3);letter-spacing:2px;text-transform:uppercase;margin-bottom:4px">Total KPI</div><div style="font-family:var(--font-display);font-size:24px;color:var(--accent)">${total}</div></div>
+          <div><div style="font-size:10px;color:var(--text3);letter-spacing:2px;text-transform:uppercase;margin-bottom:4px">Tercapai</div><div style="font-family:var(--font-display);font-size:24px;color:var(--success)">${achieved}</div></div>
+          <div><div style="font-size:10px;color:var(--text3);letter-spacing:2px;text-transform:uppercase;margin-bottom:4px">Gagal</div><div style="font-family:var(--font-display);font-size:24px;color:var(--danger)">${missed}</div></div>
+          <div><div style="font-size:10px;color:var(--text3);letter-spacing:2px;text-transform:uppercase;margin-bottom:4px">Score</div><div style="font-family:var(--font-display);font-size:24px;color:${pct>=80?'var(--success)':pct>=50?'var(--warning)':'var(--danger)'}">${pct}%</div></div>
+        </div>
+        ${total?`<div style="margin-top:14px">
+          <div style="display:flex;justify-content:space-between;font-size:11px;color:var(--text3);margin-bottom:4px;font-family:var(--font-cond);letter-spacing:1px">
+            <span>CAPAIAN KESELURUHAN</span><span>${pct}%</span>
+          </div>
+          <div class="progress-bar" style="height:8px"><div class="progress-fill" style="width:${pct}%;background:${pct>=80?'var(--success)':pct>=50?'var(--warning)':'var(--danger)'}"></div></div>
+        </div>` : ''}
+      </div>
+    </div>`;
+  }).join('')}</div>`;
+}
+
+// ============================
+// CRUD — KPI
+// ============================
+function openKpiForDiv(divId) {
+  openModal('kpiModal');
+  document.getElementById('kpiDivision').value = divId;
+}
+
+function openModal(id) {
+  if (id === 'kpiModal') {
+    document.getElementById('kpiId').value = '';
+    document.getElementById('kpiName').value = '';
+    document.getElementById('kpiUnit').value = '';
+    document.getElementById('kpiTarget').value = '';
+    document.getElementById('kpiActual').value = '';
+    document.getElementById('kpiYear').value = currentYear;
+    document.getElementById('kpiStatus').value = 'progress';
+    document.getElementById('kpiNote').value = '';
+    document.getElementById('kpiModalTitle').textContent = 'TAMBAH KPI';
+  }
+  if (id === 'mainTargetModal') {
+    document.getElementById('mtId').value = '';
+    document.getElementById('mtYear').value = currentYear;
+    document.getElementById('mtRevenue').value = '';
+    document.getElementById('mtUnits').value = '';
+    document.getElementById('mtMargin').value = '';
+    document.getElementById('mtSku').value = '';
+    document.getElementById('mtNps').value = '';
+    document.getElementById('mtTheme').value = '';
+    document.getElementById('mtNote').value = '';
+    document.getElementById('mtModalTitle').textContent = 'SET TARGET UTAMA';
+  }
+  document.getElementById(id).classList.add('open');
+}
+
+function closeModal(id) {
+  document.getElementById(id).classList.remove('open');
+}
+
+function saveKpi() {
+  const id = document.getElementById('kpiId').value;
+  const name = document.getElementById('kpiName').value.trim();
+  if (!name) { toast('Nama KPI wajib diisi', 'error'); return; }
+
+  const data = {
+    name,
+    division: document.getElementById('kpiDivision').value,
+    unit: document.getElementById('kpiUnit').value.trim(),
+    target: parseFloat(document.getElementById('kpiTarget').value) || 0,
+    actual: parseFloat(document.getElementById('kpiActual').value) || 0,
+    year: parseInt(document.getElementById('kpiYear').value) || currentYear,
+    status: document.getElementById('kpiStatus').value,
+    note: document.getElementById('kpiNote').value.trim(),
+    updatedAt: Date.now()
+  };
+
+  if (id) {
+    db.ref('kpis/'+id).update(data)
+      .then(() => { toast('KPI berhasil diupdate!', 'success'); closeModal('kpiModal'); })
+      .catch(() => toast('Gagal menyimpan', 'error'));
+  } else {
+    data.createdAt = Date.now();
+    db.ref('kpis').push(data)
+      .then(() => { toast('KPI berhasil ditambahkan!', 'success'); closeModal('kpiModal'); })
+      .catch(() => toast('Gagal menyimpan', 'error'));
+  }
+}
+
+function editKpi(id) {
+  const k = allKpis[id];
+  if (!k) return;
+  document.getElementById('kpiId').value = id;
+  document.getElementById('kpiName').value = k.name;
+  document.getElementById('kpiDivision').value = k.division;
+  document.getElementById('kpiUnit').value = k.unit || '';
+  document.getElementById('kpiTarget').value = k.target;
+  document.getElementById('kpiActual').value = k.actual;
+  document.getElementById('kpiYear').value = k.year;
+  document.getElementById('kpiStatus').value = k.status;
+  document.getElementById('kpiNote').value = k.note || '';
+  document.getElementById('kpiModalTitle').textContent = 'EDIT KPI';
+  document.getElementById('kpiModal').classList.add('open');
+}
+
+// ============================
+// CRUD — MAIN TARGET
+// ============================
+function saveMainTarget() {
+  const id = document.getElementById('mtId').value;
+  const year = parseInt(document.getElementById('mtYear').value) || currentYear;
+
+  // Check duplicate year (skip if editing same)
+  const existing = Object.entries(allMainTargets).find(([k,v]) => v.year == year && k !== id);
+  if (existing) { toast('Target untuk tahun '+year+' sudah ada!', 'error'); return; }
+
+  const data = {
+    year,
+    revenue: parseFloat(document.getElementById('mtRevenue').value) || 0,
+    units: parseFloat(document.getElementById('mtUnits').value) || 0,
+    margin: parseFloat(document.getElementById('mtMargin').value) || 0,
+    sku: parseInt(document.getElementById('mtSku').value) || 0,
+    nps: parseInt(document.getElementById('mtNps').value) || 0,
+    theme: document.getElementById('mtTheme').value.trim(),
+    note: document.getElementById('mtNote').value.trim(),
+    updatedAt: Date.now()
+  };
+
+  if (id) {
+    db.ref('mainTargets/'+id).update(data)
+      .then(() => { toast('Target berhasil diupdate!', 'success'); closeModal('mainTargetModal'); })
+      .catch(() => toast('Gagal menyimpan', 'error'));
+  } else {
+    data.createdAt = Date.now();
+    db.ref('mainTargets').push(data)
+      .then(() => { toast('Target berhasil disimpan!', 'success'); closeModal('mainTargetModal'); })
+      .catch(() => toast('Gagal menyimpan', 'error'));
+  }
+}
+
+function editMainTarget(id) {
+  const t = allMainTargets[id];
+  if (!t) return;
+  document.getElementById('mtId').value = id;
+  document.getElementById('mtYear').value = t.year;
+  document.getElementById('mtRevenue').value = t.revenue;
+  document.getElementById('mtUnits').value = t.units;
+  document.getElementById('mtMargin').value = t.margin;
+  document.getElementById('mtSku').value = t.sku;
+  document.getElementById('mtNps').value = t.nps;
+  document.getElementById('mtTheme').value = t.theme || '';
+  document.getElementById('mtNote').value = t.note || '';
+  document.getElementById('mtModalTitle').textContent = 'EDIT TARGET UTAMA';
+  document.getElementById('mainTargetModal').classList.add('open');
+}
+
+// ============================
+// DELETE
+// ============================
+let deleteType = null, deleteId = null;
+
+function confirmDelete(type, id, name) {
+  deleteType = type; deleteId = id;
+  document.getElementById('confirmText').textContent = `Yakin ingin menghapus "${name}"?`;
+  document.getElementById('confirmOverlay').classList.add('open');
+}
+
+function closeConfirm() {
+  document.getElementById('confirmOverlay').classList.remove('open');
+  deleteType = null; deleteId = null;
+}
+
+function executeDelete() {
+  if (!deleteType || !deleteId) return;
+  let path;
+  if (deleteType === 'kpi') path = 'kpis';
+  else if (deleteType === 'mainTarget') path = 'mainTargets';
+  else if (deleteType === 'note') path = 'notes';
+  else if (deleteType === 'division') path = 'divisions';
+  else return;
+  db.ref(path+'/'+deleteId).remove()
+    .then(() => { toast('Data berhasil dihapus', 'success'); closeConfirm(); })
+    .catch(() => toast('Gagal menghapus', 'error'));
+}
+
+// ============================
+// NAVIGATION
+// ============================
+function showPage(pageId, el) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.sidebar-item').forEach(i => i.classList.remove('active'));
+  const pg = document.getElementById('page-'+pageId);
+  if (pg) pg.classList.add('active');
+  if (el) el.classList.add('active');
+  currentPage = pageId;
+  // refresh
+  if (pageId.startsWith('div') && pageId !== 'divManage') {
+    const divId = pageId.replace('div','');
+    const div = DIVISIONS.find(d => d.id === divId);
+    if (div) renderDivPage(div);
+  }
+  if (pageId === 'divManage') renderDivManage();
+}
+
+// ============================
+// TOAST
+// ============================
+function toast(msg, type='info') {
+  const c = document.getElementById('toastContainer');
+  const t = document.createElement('div');
+  t.className = `toast ${type}`;
+  const icon = type==='success'?'fa-check-circle':type==='error'?'fa-exclamation-circle':'fa-info-circle';
+  t.innerHTML = `<i class="fas ${icon}"></i> ${msg}`;
+  c.appendChild(t);
+  setTimeout(() => { t.style.opacity='0'; t.style.transform='translateX(100%)'; t.style.transition='all 0.3s'; setTimeout(()=>t.remove(),300); }, 3000);
+}
+
+// ============================
+// HELPERS
+// ============================
+function esc(s) {
+  if (!s) return '';
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+function fmt(n) {
+  if (!n && n !== 0) return '-';
+  return Number(n).toLocaleString('id-ID');
+}
+
+function fmtBig(n) {
+  if (!n) return '0';
+  if (n >= 1e9) return (n/1e9).toFixed(1)+' M';
+  if (n >= 1e6) return (n/1e6).toFixed(1)+' Jt';
+  return fmt(n);
+}
+
+function statusBadge(s) {
+  const map = {
+    achieved: '<span class="badge badge-success"><i class="fas fa-check"></i> Tercapai</span>',
+    progress: '<span class="badge badge-warning"><i class="fas fa-clock"></i> On Progress</span>',
+    missed: '<span class="badge badge-danger"><i class="fas fa-times"></i> Missed</span>'
+  };
+  return map[s] || '<span class="badge badge-info">—</span>';
+}
+
+// Close modal on overlay click
+document.querySelectorAll('.modal-overlay').forEach(o => {
+  o.addEventListener('click', e => { if (e.target === o) o.classList.remove('open'); });
+});
+
+// ============================
+// DYNAMIC SIDEBAR DIVISIONS
+// ============================
+function renderSidebarDivisions() {
+  const container = document.getElementById('sidebarDivisions');
+  if (!container) return;
+  container.innerHTML = DIVISIONS.map(div => `
+    <div class="sidebar-item" onclick="navigateToDivPage('${div.id}', this)" id="nav-${div.id}">
+      <i class="fas ${div.icon} icon"></i> ${div.label}
+    </div>`).join('');
+}
+
+function navigateToDivPage(divId, el) {
+  // Ensure page container exists
+  let pg = document.getElementById('page-div'+divId);
+  if (!pg) {
+    pg = document.createElement('div');
+    pg.className = 'page';
+    pg.id = 'page-div'+divId;
+    pg.innerHTML = `<div id="content-div${divId}"></div>`;
+    document.querySelector('.main').appendChild(pg);
+  }
+  showPage('div'+divId, el);
+}
+
+// ============================
+// RENDER DIVISION MANAGER
+// ============================
+function renderDivManage() {
+  const container = document.getElementById('divManageList');
+  if (!container) return;
+  if (!DIVISIONS.length) {
+    container.innerHTML = `<div class="empty-state"><i class="fas fa-sitemap"></i><p>Belum ada divisi</p></div>`;
+    return;
+  }
+  container.innerHTML = DIVISIONS.map(div => {
+    const kpiCount = Object.values(allKpis).filter(k => k.division === div.id).length;
+    const _key = div._key || '';
+    return `
+    <div class="div-manage-card">
+      <div class="div-manage-left">
+        <div class="div-manage-icon" style="background:${div.color}22;color:${div.color}"><i class="fas ${div.icon}"></i></div>
+        <div>
+          <div class="div-manage-name" style="color:${div.color}">${esc(div.label)}</div>
+          <div class="div-manage-count">${kpiCount} KPI terdaftar</div>
+        </div>
+      </div>
+      <div class="div-manage-actions">
+        <button class="btn btn-secondary btn-sm" onclick="openDivModal('${_key}')"><i class="fas fa-pen"></i> Edit</button>
+        <button class="btn btn-danger btn-sm" onclick="confirmDelete('division','${_key}','${esc(div.label)}')" ${kpiCount > 0 ? 'title="Masih ada '+kpiCount+' KPI"' : ''}><i class="fas fa-trash"></i> Hapus</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+// ============================
+// CRUD DIVISIONS
+// ============================
+const PRESET_COLORS = ['#e8ff00','#00e676','#00d4ff','#ff6b00','#ff6bde','#ffab00','#ff3b3b','#a855f7','#ec4899','#06b6d4','#f97316','#84cc16'];
+const PRESET_ICONS = ['fa-tshirt','fa-dollar-sign','fa-bullhorn','fa-coins','fa-cogs','fa-users','fa-boxes','fa-truck','fa-laptop','fa-chart-bar','fa-paint-brush','fa-wrench','fa-shield-alt','fa-globe','fa-star','fa-heart','fa-bolt','fa-camera','fa-code','fa-flask','fa-leaf','fa-music'];
+
+function buildColorSwatches() {
+  const container = document.getElementById('colorSwatches');
+  if (!container) return;
+  container.innerHTML = PRESET_COLORS.map(c => `<div class="color-swatch" style="background:${c}" onclick="selectColor('${c}')" data-color="${c}"></div>`).join('');
+}
+function buildIconGrid() {
+  const container = document.getElementById('iconGrid');
+  if (!container) return;
+  container.innerHTML = PRESET_ICONS.map(ic => `<div class="icon-opt" onclick="selectIcon('${ic}')" data-icon="${ic}"><i class="fas ${ic}"></i></div>`).join('');
+}
+function selectColor(c) {
+  document.getElementById('divModalColor').value = c;
+  document.querySelectorAll('.color-swatch').forEach(s => s.classList.toggle('selected', s.dataset.color === c));
+}
+function selectIcon(ic) {
+  document.getElementById('divModalIcon').value = ic;
+  document.querySelectorAll('.icon-opt').forEach(i => i.classList.toggle('selected', i.dataset.icon === ic));
+}
+
+function openDivModal(key) {
+  document.getElementById('divModalId').value = key || '';
+  if (key) {
+    const div = DIVISIONS.find(d => d._key === key);
+    if (!div) return;
+    document.getElementById('divModalName').value = div.label;
+    document.getElementById('divModalColor').value = div.color;
+    document.getElementById('divModalIcon').value = div.icon;
+    document.getElementById('divModalTitle').textContent = 'EDIT DIVISI';
+    document.querySelectorAll('.color-swatch').forEach(s => s.classList.toggle('selected', s.dataset.color === div.color));
+    document.querySelectorAll('.icon-opt').forEach(i => i.classList.toggle('selected', i.dataset.icon === div.icon));
+  } else {
+    document.getElementById('divModalName').value = '';
+    document.getElementById('divModalColor').value = '#e8ff00';
+    document.getElementById('divModalIcon').value = 'fa-star';
+    document.getElementById('divModalTitle').textContent = 'TAMBAH DIVISI';
+    document.querySelectorAll('.color-swatch').forEach(s => s.classList.remove('selected'));
+    document.querySelectorAll('.icon-opt').forEach(i => i.classList.remove('selected'));
+  }
+  document.getElementById('divModal').classList.add('open');
+}
+
+function saveDivision() {
+  const key = document.getElementById('divModalId').value;
+  const label = document.getElementById('divModalName').value.trim();
+  if (!label) { toast('Nama divisi wajib diisi', 'error'); return; }
+  const color = document.getElementById('divModalColor').value || '#e8ff00';
+  const icon = document.getElementById('divModalIcon').value || 'fa-star';
+  // Derive id from label (no spaces, PascalCase)
+  const id = key ? (DIVISIONS.find(d=>d._key===key)||{}).id || label.replace(/\s+/g,'') : label.replace(/\s+/g,'');
+  const data = { id, label, icon, color };
+
+  if (key) {
+    db.ref('divisions/'+key).update(data)
+      .then(() => { toast('Divisi berhasil diupdate!', 'success'); closeModal('divModal'); })
+      .catch(() => toast('Gagal menyimpan', 'error'));
+  } else {
+    db.ref('divisions').push(data)
+      .then(() => { toast('Divisi berhasil ditambahkan!', 'success'); closeModal('divModal'); })
+      .catch(() => toast('Gagal menyimpan', 'error'));
+  }
+}
+
+// ============================
+// UPDATE SELECTS (dynamic)
+// ============================
+function updateDivisionSelects() {
+  const opts = DIVISIONS.map(d => `<option value="${esc(d.id)}">${esc(d.label)}</option>`).join('');
+  const optsFilter = '<option value="">Semua Divisi</option>' + opts;
+
+  // KPI modal division select
+  const kpiDiv = document.getElementById('kpiDivision');
+  if (kpiDiv) kpiDiv.innerHTML = opts;
+
+  // Filter select in manage page
+  const filterDiv = document.getElementById('filterDiv');
+  if (filterDiv) filterDiv.innerHTML = optsFilter;
+}
+
+// ============================
+// NOTES CRUD (PER DIVISI)
+// ============================
+
+// Division type mapping — which note types & fields are relevant per division
+const DIV_NOTE_CONFIG = {
+  // Sales: pemasukan + customer
+  'Sales':      { types: ['income','customer','progress','milestone','issue','other'], defaultType: 'income',   showIncome: true,  showCustomer: true  },
+  // Finance: pemasukan only
+  'Finance':    { types: ['income','progress','milestone','issue','other'],            defaultType: 'income',   showIncome: true,  showCustomer: false },
+  // Marketing: customer/chat focus, no pemasukan
+  'Marketing':  { types: ['customer','progress','milestone','issue','other'],          defaultType: 'customer', showIncome: false, showCustomer: true  },
+  // Product: progress & milestone focus
+  'Product':    { types: ['progress','milestone','issue','other'],                     defaultType: 'progress', showIncome: false, showCustomer: false },
+  // Operations: progress, kendala, milestone
+  'Operations': { types: ['progress','issue','milestone','other'],                     defaultType: 'progress', showIncome: false, showCustomer: false },
+  // HR: progress, milestone, issue
+  'HR':         { types: ['progress','issue','milestone','other'],                     defaultType: 'progress', showIncome: false, showCustomer: false },
+};
+const DIV_NOTE_DEFAULT = { types: ['income','customer','progress','milestone','issue','other'], defaultType: 'other', showIncome: true, showCustomer: true };
+
+const TYPE_LABELS = {
+  income: '💰 Pemasukan', customer: '💬 Chat / Customer',
+  progress: '📈 Update Progres', issue: '⚠️ Kendala',
+  milestone: '🏆 Milestone', other: '📝 Lainnya'
+};
+
+function getDivNoteConfig(divId) {
+  // Try exact match first, then partial (for custom division names)
+  if (DIV_NOTE_CONFIG[divId]) return DIV_NOTE_CONFIG[divId];
+  const key = Object.keys(DIV_NOTE_CONFIG).find(k => divId && divId.toLowerCase().includes(k.toLowerCase()));
+  return key ? DIV_NOTE_CONFIG[key] : DIV_NOTE_DEFAULT;
+}
+
+function toggleNoteFields(type, divId) {
+  const cfg = getDivNoteConfig(divId || document.getElementById('noteDivisionHidden').value);
+  // Income fields: show only if type=income AND division supports income
+  document.getElementById('incomeFields').style.display = (type === 'income' && cfg.showIncome) ? 'block' : 'none';
+  // Customer fields: show only if type=customer AND division supports customer
+  document.getElementById('customerFields').style.display = (type === 'customer' && cfg.showCustomer) ? 'block' : 'none';
+}
+
+function buildTypeOptions(cfg, selectedType) {
+  return cfg.types.map(t =>
+    `<option value="${t}" ${t === selectedType ? 'selected' : ''}>${TYPE_LABELS[t]}</option>`
+  ).join('');
+}
+
+function openNoteModal(divId, noteId) {
+  document.getElementById('noteId').value = noteId || '';
+  document.getElementById('noteDivisionHidden').value = divId || '';
+  document.getElementById('noteYear').value = currentYear;
+
+  const div = DIVISIONS.find(d => d.id === divId);
+  const badge = document.getElementById('noteModalDivBadge');
+  const cfg = getDivNoteConfig(divId);
+
+  if (noteId) {
+    // EDIT mode
+    const n = allNotes[noteId];
+    if (!n) return;
+    const editDivId = n.division || divId;
+    const editCfg = getDivNoteConfig(editDivId);
+    document.getElementById('noteDate').value = n.date || '';
+    document.getElementById('noteType').innerHTML = buildTypeOptions(editCfg, n.type || editCfg.defaultType);
+    document.getElementById('noteTitle').value = n.title || '';
+    document.getElementById('noteDesc').value = n.desc || '';
+    document.getElementById('noteIncome').value = n.income || '';
+    document.getElementById('noteUnits').value = n.units || '';
+    document.getElementById('noteChatCount').value = n.chatCount || '';
+    document.getElementById('noteClosing').value = n.closing || '';
+    document.getElementById('noteYear').value = n.year || currentYear;
+    document.getElementById('noteModalTitle').textContent = 'EDIT CATATAN';
+    toggleNoteFields(n.type || editCfg.defaultType, editDivId);
+    const editDiv = DIVISIONS.find(d => d.id === editDivId);
+    if (editDiv) badge.innerHTML = `<i class="fas ${editDiv.icon}" style="color:${editDiv.color}"></i> <span style="color:${editDiv.color}">${esc(editDiv.label)}</span>`;
+    else badge.innerHTML = '';
+    // KPI
+    const kpiSel = document.getElementById('noteKpi');
+    const kpis = getKpisForDiv(editDivId, n.year || currentYear);
+    kpiSel.innerHTML = '<option value="">— Pilih KPI —</option>' + kpis.map(k => `<option value="${k.id}" ${k.id===n.kpiId?'selected':''}>${esc(k.name)}</option>`).join('');
+  } else {
+    // ADD mode
+    document.getElementById('noteDate').valueAsDate = new Date();
+    document.getElementById('noteType').innerHTML = buildTypeOptions(cfg, cfg.defaultType);
+    document.getElementById('noteTitle').value = '';
+    document.getElementById('noteDesc').value = '';
+    document.getElementById('noteIncome').value = '';
+    document.getElementById('noteUnits').value = '';
+    document.getElementById('noteChatCount').value = '';
+    document.getElementById('noteClosing').value = '';
+    document.getElementById('noteModalTitle').textContent = 'TAMBAH CATATAN';
+    toggleNoteFields(cfg.defaultType, divId);
+    if (div) badge.innerHTML = `<i class="fas ${div.icon}" style="color:${div.color}"></i> <span style="color:${div.color}">${esc(div.label)}</span>`;
+    else badge.innerHTML = '';
+    // KPI
+    const kpiSel = document.getElementById('noteKpi');
+    const kpis = getKpisForDiv(divId, currentYear);
+    kpiSel.innerHTML = '<option value="">— Pilih KPI —</option>' + kpis.map(k => `<option value="${k.id}">${esc(k.name)}</option>`).join('');
+  }
+
+  document.getElementById('noteModal').classList.add('open');
+}
+
+function saveNote() {
+  const id = document.getElementById('noteId').value;
+  const title = document.getElementById('noteTitle').value.trim();
+  if (!title) { toast('Judul wajib diisi', 'error'); return; }
+  const type = document.getElementById('noteType').value;
+
+  const data = {
+    date: document.getElementById('noteDate').value,
+    type,
+    title,
+    division: document.getElementById('noteDivisionHidden').value,
+    kpiId: document.getElementById('noteKpi').value,
+    desc: document.getElementById('noteDesc').value.trim(),
+    income: type === 'income' ? (parseFloat(document.getElementById('noteIncome').value) || 0) : 0,
+    units: type === 'income' ? (parseInt(document.getElementById('noteUnits').value) || 0) : 0,
+    chatCount: type === 'customer' ? (parseInt(document.getElementById('noteChatCount').value) || 0) : 0,
+    closing: type === 'customer' ? (parseInt(document.getElementById('noteClosing').value) || 0) : 0,
+    progress: parseFloat(document.getElementById('noteProgress').value) || 0,
+    year: parseInt(document.getElementById('noteYear').value) || currentYear,
+    updatedAt: Date.now()
+  };
+
+  if (id) {
+    db.ref('notes/'+id).update(data)
+      .then(() => { toast('Catatan diupdate!', 'success'); closeModal('noteModal'); })
+      .catch(() => toast('Gagal menyimpan', 'error'));
+  } else {
+    data.createdAt = Date.now();
+    db.ref('notes').push(data)
+      .then(() => { toast('Catatan disimpan!', 'success'); closeModal('noteModal'); })
+      .catch(() => toast('Gagal menyimpan', 'error'));
+  }
+}
+
+// ============================
+// RENDER DIVISION NOTES (per divisi)
+// ============================
+function renderDivNotes(divId, divColor) {
+  const containerId = `notes-div-${divId}`;
+  const container = document.getElementById(containerId);
+  if (!container) return;
+
+  const searchEl = document.getElementById(`noteSearch-${divId}`);
+  const filterEl = document.getElementById(`noteFilter-${divId}`);
+  const search = searchEl ? searchEl.value.toLowerCase() : '';
+  const filter = filterEl ? filterEl.value : 'all';
+  const cfg = getDivNoteConfig(divId);
+
+  let notes = Object.entries(allNotes)
+    .map(([k,v]) => ({id:k,...v}))
+    .filter(n => n.division === divId && n.year == currentYear);
+
+  if (filter !== 'all') notes = notes.filter(n => n.type === filter);
+  if (search) notes = notes.filter(n =>
+    (n.title||'').toLowerCase().includes(search) ||
+    (n.desc||'').toLowerCase().includes(search));
+  notes.sort((a,b) => (b.date||'').localeCompare(a.date||'') || b.createdAt - a.createdAt);
+
+  const typeLabel = { income:'Pemasukan', customer:'Customer', progress:'Progres', issue:'Kendala', milestone:'Milestone', other:'Lainnya' };
+  const typeColor = { income:'var(--success)', customer:'var(--accent3)', progress:'var(--accent)', issue:'var(--danger)', milestone:'var(--warning)', other:'var(--text2)' };
+
+  if (!notes.length) {
+    container.innerHTML = `<div class="empty-state" style="padding:40px 24px"><i class="fas fa-book-open"></i><p>Belum ada catatan untuk divisi ini di ${currentYear}</p></div>`;
+    return;
+  }
+
+  // Summary bar — only show what's relevant for this division
+  const allDivNotes = Object.entries(allNotes).map(([k,v])=>({id:k,...v})).filter(n=>n.division===divId&&n.year==currentYear);
+  const totalIncome = allDivNotes.filter(n=>n.type==='income').reduce((s,n)=>s+(n.income||0),0);
+  const totalUnits  = allDivNotes.filter(n=>n.type==='income').reduce((s,n)=>s+(n.units||0),0);
+  const totalChats  = allDivNotes.filter(n=>n.type==='customer').reduce((s,n)=>s+(n.chatCount||0),0);
+  const totalClosing= allDivNotes.filter(n=>n.type==='customer').reduce((s,n)=>s+(n.closing||0),0);
+  const mt = Object.values(allMainTargets).find(t => t.year == currentYear);
+
+  let summaryParts = [];
+  if (cfg.showIncome && totalIncome > 0) {
+    const incPct = mt && mt.revenue > 0 ? Math.min(Math.round(getTotalIncomeForYear(currentYear)/mt.revenue*100),999) : null;
+    const pc = incPct !== null ? (incPct>=100?'var(--success)':incPct>=60?'var(--warning)':'var(--danger)') : 'var(--success)';
+    summaryParts.push(`
+      <div>
+        <div style="font-family:var(--font-cond);font-size:9px;letter-spacing:2px;color:var(--text3);text-transform:uppercase;margin-bottom:4px">Total Pemasukan</div>
+        <div style="font-family:var(--font-display);font-size:20px;color:var(--success)">${fmtBig(totalIncome)}</div>
+        ${incPct !== null ? `<div style="font-family:var(--font-cond);font-size:10px;color:${pc};margin-top:2px">${incPct}% dari target revenue</div>` : ''}
+      </div>`);
+    if (totalUnits > 0) summaryParts.push(`<div><div style="font-family:var(--font-cond);font-size:9px;letter-spacing:2px;color:var(--text3);text-transform:uppercase;margin-bottom:4px">Unit Terjual</div><div style="font-family:var(--font-display);font-size:20px;color:var(--success)">${fmt(totalUnits)}</div></div>`);
+  }
+  if (cfg.showCustomer && totalChats > 0) {
+    summaryParts.push(`<div><div style="font-family:var(--font-cond);font-size:9px;letter-spacing:2px;color:var(--text3);text-transform:uppercase;margin-bottom:4px">Total Chat/Inquiry</div><div style="font-family:var(--font-display);font-size:20px;color:var(--accent3)">${fmt(totalChats)}</div></div>`);
+    summaryParts.push(`<div><div style="font-family:var(--font-cond);font-size:9px;letter-spacing:2px;color:var(--text3);text-transform:uppercase;margin-bottom:4px">Closing</div><div style="font-family:var(--font-display);font-size:20px;color:var(--accent3)">${fmt(totalClosing)}<small style="font-size:11px;opacity:0.6"> / ${totalChats>0?Math.round(totalClosing/totalChats*100):0}%</small></div></div>`);
+  }
+
+  const summaryBar = summaryParts.length ? `
+  <div style="display:grid;grid-template-columns:repeat(${Math.min(summaryParts.length,4)},1fr);gap:10px;margin-bottom:16px;padding:16px;background:var(--surface3);border:1px solid var(--border)">
+    ${summaryParts.join('')}
+  </div>` : '';
+
+  container.innerHTML = summaryBar + notes.map(n => {
+    const tc = typeColor[n.type]||'var(--text2)';
+    const tl = typeLabel[n.type]||n.type;
+    const kpi = n.kpiId ? allKpis[n.kpiId] : null;
+
+    // Extra data badges
+    let extraBadges = '';
+    if (n.type==='income' && (n.income||n.units)) {
+      if (n.income) extraBadges += `<span style="background:rgba(0,230,118,0.1);border:1px solid rgba(0,230,118,0.2);color:var(--success);padding:2px 10px;border-radius:2px;font-family:var(--font-cond);font-size:11px;letter-spacing:1px"><i class="fas fa-coins"></i> Rp ${fmtBig(n.income)}</span>`;
+      if (n.units) extraBadges += `<span style="background:rgba(0,230,118,0.08);border:1px solid rgba(0,230,118,0.15);color:var(--success);padding:2px 10px;border-radius:2px;font-family:var(--font-cond);font-size:11px;letter-spacing:1px">${fmt(n.units)} unit</span>`;
+    }
+    if (n.type==='customer' && (n.chatCount||n.closing)) {
+      if (n.chatCount) extraBadges += `<span style="background:rgba(0,212,255,0.1);border:1px solid rgba(0,212,255,0.2);color:var(--accent3);padding:2px 10px;border-radius:2px;font-family:var(--font-cond);font-size:11px;letter-spacing:1px"><i class="fas fa-comment"></i> ${fmt(n.chatCount)} chat</span>`;
+      if (n.closing) extraBadges += `<span style="background:rgba(0,212,255,0.08);border:1px solid rgba(0,212,255,0.15);color:var(--accent3);padding:2px 10px;border-radius:2px;font-family:var(--font-cond);font-size:11px;letter-spacing:1px"><i class="fas fa-check"></i> ${fmt(n.closing)} closing</span>`;
+    }
+
+    // Target progress block (income → revenue target, customer → closing KPI if linked)
+    let targetProgressBlock = '';
+    if (n.type === 'income' && mt && mt.revenue > 0) {
+      const cumIncome = Object.values(allNotes)
+        .filter(x => x.type === 'income' && x.year == (n.year || currentYear) && (x.date || '') <= (n.date || ''))
+        .reduce((s, x) => s + (x.income || 0), 0);
+      const pctOfTarget = Math.min(Math.round(cumIncome / mt.revenue * 100), 999);
+      const pc = pctOfTarget >= 100 ? 'var(--success)' : pctOfTarget >= 60 ? 'var(--warning)' : 'var(--danger)';
+      targetProgressBlock = `
+      <div style="margin-top:10px;padding:10px 12px;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.06)">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;flex-wrap:wrap;gap:4px">
+          <span style="font-family:var(--font-cond);font-size:9px;letter-spacing:2px;color:var(--text3);text-transform:uppercase">📈 PROGRES KE TARGET REVENUE</span>
+          <div style="display:flex;align-items:center;gap:8px">
+            <span style="font-family:var(--font-cond);font-size:11px;color:var(--text2)">Akumulasi s/d tanggal ini: Rp ${fmtBig(cumIncome)}</span>
+            <span style="font-family:var(--font-display);font-size:18px;color:${pc}">${pctOfTarget}%</span>
+          </div>
+        </div>
+        <div style="height:5px;background:rgba(255,255,255,0.06);overflow:hidden">
+          <div style="height:100%;width:${Math.min(pctOfTarget,100)}%;background:${pc};transition:width 0.8s ease"></div>
+        </div>
+        <div style="display:flex;justify-content:space-between;margin-top:4px;font-family:var(--font-cond);font-size:9px;color:var(--text3)">
+          <span>Rp 0</span><span>Target: Rp ${fmtBig(mt.revenue)}</span>
+        </div>
+      </div>`;
+    } else if (n.type === 'customer' && kpi && kpi.target > 0) {
+      // Link customer note to KPI target (e.g. target chat/closing from KPI)
+      const cumChat = Object.values(allNotes)
+        .filter(x => x.type === 'customer' && x.division === divId && x.year == (n.year||currentYear) && (x.date||'') <= (n.date||''))
+        .reduce((s,x) => s+(x.chatCount||0), 0);
+      const pctKpi = Math.min(Math.round(cumChat / kpi.target * 100), 999);
+      const pc = pctKpi >= 100 ? 'var(--success)' : pctKpi >= 60 ? 'var(--warning)' : 'var(--danger)';
+      targetProgressBlock = `
+      <div style="margin-top:10px;padding:10px 12px;background:rgba(0,212,255,0.03);border:1px solid rgba(0,212,255,0.1)">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;flex-wrap:wrap;gap:4px">
+          <span style="font-family:var(--font-cond);font-size:9px;letter-spacing:2px;color:var(--text3);text-transform:uppercase">📈 PROGRES KE TARGET KPI: ${esc(kpi.name)}</span>
+          <span style="font-family:var(--font-display);font-size:18px;color:${pc}">${pctKpi}%</span>
+        </div>
+        <div style="height:5px;background:rgba(255,255,255,0.06);overflow:hidden">
+          <div style="height:100%;width:${Math.min(pctKpi,100)}%;background:${pc}"></div>
+        </div>
+        <div style="display:flex;justify-content:space-between;margin-top:4px;font-family:var(--font-cond);font-size:9px;color:var(--text3)">
+          <span>${fmt(cumChat)} chat terkumpul</span><span>Target: ${fmt(kpi.target)} ${esc(kpi.unit||'')}</span>
+        </div>
+      </div>`;
+    }
+
+    return `
+    <div class="log-card" style="border-left-color:${tc}">
+      <div class="log-card-header">
+        <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+          <span class="log-date"><i class="fas fa-calendar-alt"></i> ${n.date||'—'}</span>
+          <span style="font-family:var(--font-cond);font-size:10px;letter-spacing:1px;padding:2px 8px;border-radius:2px;text-transform:uppercase;background:${tc}18;color:${tc};border:1px solid ${tc}30">${tl}</span>
+          ${extraBadges}
+        </div>
+        <div class="log-actions">
+          <button class="btn btn-secondary btn-icon btn-sm" onclick="openNoteModal('${divId}','${n.id}')" title="Edit"><i class="fas fa-pen"></i></button>
+          <button class="btn btn-danger btn-icon btn-sm" onclick="confirmDelete('note','${n.id}','${esc(n.title)}')" title="Hapus"><i class="fas fa-trash"></i></button>
+        </div>
+      </div>
+      <div class="log-title">${esc(n.title)}</div>
+      ${n.desc ? `<div class="log-desc" style="margin-top:4px">${esc(n.desc)}</div>` : ''}
+      ${targetProgressBlock}
+      ${kpi && n.type !== 'customer' ? `<div class="log-meta" style="margin-top:8px"><div class="log-meta-item"><i class="fas fa-bullseye"></i> KPI: ${esc(kpi.name)}</div></div>` : ''}
+      ${kpi && n.type === 'customer' ? '' : kpi ? `<div class="log-meta" style="margin-top:8px"><div class="log-meta-item"><i class="fas fa-bullseye"></i> KPI: ${esc(kpi.name)}</div></div>` : ''}
+    </div>`;
+  }).join('');
+}
+
+function renderNoteStats() {} // kept for backward compat
+function filterNotes() {}
+function renderNotes() {
+  // Trigger re-render for current div page if open
+  const activePage = document.querySelector('.page.active');
+  if (activePage && activePage.id && activePage.id.startsWith('page-div')) {
+    const divId = activePage.id.replace('page-div','');
+    const div = DIVISIONS.find(d => d.id === divId);
+    if (div) renderDivPage(div);
+  }
+}
+
+// ============================
+// RENDER ALL (extended)
+// ============================
+function renderAll() {
+  renderStats();
+  renderDivisionCards();
+  renderRecentTable();
+  renderManage();
+  DIVISIONS.forEach(d => {
+    // Ensure page container exists for dynamic divisions
+    if (!document.getElementById('page-div'+d.id)) {
+      const pg = document.createElement('div');
+      pg.className = 'page';
+      pg.id = 'page-div'+d.id;
+      pg.innerHTML = `<div id="content-div${d.id}"></div>`;
+      document.querySelector('.main').appendChild(pg);
+    }
+    renderDivPage(d);
+  });
+}
+</script>
+</body>
+</html>
